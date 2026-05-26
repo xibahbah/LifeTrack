@@ -1,0 +1,16 @@
+# macOS metadata
+.DS_Store
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# LaTeX build intermediates
+*.aux
+*.log
+*.out
+
+# Raw source data exceeds GitHub file size limits.
+/LifeTrack White Stork SW Germany_2013-2019-acceleration-1of3.csv
+/LifeTrack White Stork SW Germany_2013-2019-acceleration-3of3.csv
+/final_project_proposal/raw/lifetrack_gps_2016_2023.csv.zip

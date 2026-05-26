@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Sky Has a Pulse</title>
+<style>
+  :root{
+    --bg:#03060a;--ink:#f7fbff;--muted:#9aa8b7;--fog:#1b2a36;
+    --cyan:#55e6ff;--gold:#ffd166;--coral:#ff4f64;--green:#7cf6bf;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;min-height:480vh;background:var(--bg);color:var(--ink);
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+    overflow-x:hidden;
+  }
+  canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;background:
+    radial-gradient(circle at 20% 18%,rgba(85,230,255,.12),transparent 30%),
+    radial-gradient(circle at 80% 20%,rgba(255,79,100,.09),transparent 30%),
+    radial-gradient(circle at 45% 95%,rgba(124,246,191,.08),transparent 38%),
+    #03060a;}
+  .grain{position:fixed;inset:0;pointer-events:none;opacity:.12;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");mix-blend-mode:screen}
+  .hud{
+    position:fixed;left:24px;right:24px;top:20px;z-index:5;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;pointer-events:none;
+  }
+  h1{font-size:clamp(54px,9vw,132px);line-height:.82;letter-spacing:-.08em;margin:0;text-shadow:0 0 60px rgba(85,230,255,.14)}
+  .sub{max-width:520px;color:var(--muted);line-height:1.55;font-size:15px;margin-top:14px}
+  .controls{pointer-events:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:620px}
+  button,select,input{
+    border:1px solid rgba(255,255,255,.13);background:rgba(5,10,18,.48);backdrop-filter:blur(16px);
+    color:var(--ink);border-radius:999px;padding:10px 14px;font:inherit;box-shadow:0 12px 44px rgba(0,0,0,.24)
+  }
+  button{cursor:pointer}
+  button.on{background:rgba(247,251,255,.95);color:#03060a}
+  input[type=range]{width:240px;accent-color:var(--cyan)}
+  .story{position:relative;z-index:3;pointer-events:none}
+  .chapter{min-height:82vh;display:flex;align-items:center;padding:0 7vw}
+  .chapter:nth-child(even){justify-content:flex-end}
+  .panel{
+    max-width:420px;background:rgba(3,6,10,.48);border:1px solid rgba(255,255,255,.08);
+    border-radius:24px;padding:22px 24px;backdrop-filter:blur(18px);box-shadow:0 24px 100px rgba(0,0,0,.28)
+  }
+  .panel b{color:var(--cyan);font-size:12px;letter-spacing:.18em;text-transform:uppercase}
+  .panel h2{font-size:31px;line-height:1;margin:10px 0 12px;letter-spacing:-.04em}
+  .panel p{margin:0;color:var(--muted);line-height:1.55}
+  .inspector{
+    position:fixed;right:24px;bottom:24px;width:min(390px,calc(100vw - 48px));z-index:6;
+    background:rgba(3,6,10,.62);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:18px;backdrop-filter:blur(18px);
+    box-shadow:0 30px 120px rgba(0,0,0,.42);opacity:0;transform:translateY(12px);transition:.35s ease;
+  }
+  .inspector.on{opacity:1;transform:translateY(0)}
+  .name{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:5px}
+  .meta{color:var(--muted);font-size:12px;line-height:1.45;margin-bottom:12px}
+  .bars{height:86px;display:flex;align-items:flex-end;gap:3px}
+  .bars i{display:block;flex:1;border-radius:999px 999px 2px 2px;min-height:4px;background:linear-gradient(to top,var(--cyan),var(--gold),var(--coral));opacity:.88}
+  .tooltip{
+    position:fixed;z-index:7;pointer-events:none;transform:translate(-50%,-120%);opacity:0;
+    background:rgba(3,6,10,.78);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:10px 12px;backdrop-filter:blur(14px);
+    color:var(--ink);font-size:12px;line-height:1.4;transition:opacity .14s ease;
+  }
+  .sound{position:fixed;left:24px;bottom:24px;z-index:6;color:var(--muted);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+  @media(max-width:900px){
+    .hud{display:block}.controls{margin-top:16px;justify-content:flex-start}.chapter{padding:0 24px}.chapter:nth-child(even){justify-content:flex-start}
+    h1{font-size:64px}.sub{font-size:14px}
+  }
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<div class="grain"></div>
+<div class="hud">
+  <div>
+    <h1>The Sky<br>Has a Pulse</h1>
+    <div class="sub">A living migration archive built from white stork accelerometers. Each glow is not a location. It is a body in motion.</div>
+  </div>
+  <div class="controls">
+    <select id="birdSelect" aria-label="Choose a bird"></select>
+    <button id="all" class="on">all</button>
+    <button id="dead">recorded dead</button>
+    <button id="open">open record</button>
+    <button id="play">play</button>
+    <input id="scrub" type="range" min="0" value="0" aria-label="Month scrubber">
+  </div>
+</div>
+<div class="story">
+  <section class="chapter"><div class="panel"><b>01 / Wake the archive</b><h2>Migration begins as a field of quiet organisms.</h2><p>Scroll and the sky changes scale. The flock is not summarized; it is encountered.</p></div></section>
+  <section class="chapter"><div class="panel"><b>02 / Scrub time</b><h2>A month becomes a beam of attention.</h2><p>The range control moves through the sensor record. Pulses brighten when a bird's body becomes more active.</p></div></section>
+  <section class="chapter"><div class="panel"><b>03 / Touch a pulse</b><h2>Hovering becomes observation.</h2><p>Nearby pulses lean toward the cursor. Identity appears only when the reader gets close.</p></div></section>
+  <section class="chapter"><div class="panel"><b>04 / Enter one life</b><h2>Click a bird and the ecosystem folds into an individual rhythm.</h2><p>The small bars show a monthly pulse signature: gaps, bursts, and long stretches of signal.</p></div></section>
+  <section class="chapter"><div class="panel"><b>05 / Feel disappearance</b><h2>Some rhythms fracture into red.</h2><p>Outcome is not a filter menu. It becomes atmosphere: the archive carries survival and loss at the same time.</p></div></section>
+</div>
+<div class="inspector" id="inspector"><div class="name" id="iName"></div><div class="meta" id="iMeta"></div><div class="bars" id="bars"></div></div>
+<div class="tooltip" id="tip"></div>
+<div class="sound">sound concept: low wind / wingbeat pulses / distant wetland ambience</div>
+<script>
+const canvas=document.getElementById("sky"),ctx=canvas.getContext("2d");
+let W=0,H=0,DPR=1,mouse={x:-9999,y:-9999},particles=[],data,month=0,mode="all",selected=0,playTimer=null,scrollT=0;
+const colors=["#07111d","#12324b","#55e6ff","#ffd166","#ff4f64"];
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+addEventListener("resize",resize);resize();
+function lerp(a,b,t){return a+(b-a)*t}
+function rgb(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function hex(a){return "#"+a.map(v=>Math.round(v).toString(16).padStart(2,"0")).join("")}
+function color(v,max){
+  if(v==null)return "rgba(28,39,55,.24)";
+  let t=Math.max(0,Math.min(1,v/max)), stops=[0,.28,.55,.78,1];
+  for(let i=1;i<stops.length;i++)if(t<=stops[i]){
+    let p=(t-stops[i-1])/(stops[i]-stops[i-1]), A=rgb(colors[i-1]), B=rgb(colors[i]);
+    return hex([lerp(A[0],B[0],p),lerp(A[1],B[1],p),lerp(A[2],B[2],p)]);
+  }
+  return colors.at(-1);
+}
+function makeParticles(){
+  particles=[];
+  const birds=data.birds.filter(b=>mode==="all"||b.status===mode);
+  birds.forEach((b,bi)=>{
+    b.monthly.forEach((v,mi)=>{
+      const t=mi/data.months.length*Math.PI*2+b.phase;
+      const ring=b.radius;
+      particles.push({bird:b,bi:data.birds.indexOf(b),mi,value:v,
+        ox:Math.cos(t)*ring,oy:Math.sin(t*0.78+b.phase)*ring*.62,
+        x:0,y:0,vx:0,vy:0,r:1.5+(v||.2)*2.2});
+    });
+  });
+}
+function draw(){
+  scrollT=scrollY/(document.body.scrollHeight-innerHeight);
+  ctx.clearRect(0,0,W,H);
+  ctx.globalCompositeOperation="source-over";
+  ctx.fillStyle="rgba(3,6,10,.28)";ctx.fillRect(0,0,W,H);
+  ctx.globalCompositeOperation="lighter";
+  const scale=280+scrollT*460, cx=W*(.48-.12*scrollT), cy=H*(.56-.1*scrollT);
+  let nearest=null, nd=9999;
+  particles.forEach(p=>{
+    const active=p.mi===month, selectedBird=p.bi===selected;
+    let tx=cx+p.ox*scale, ty=cy+p.oy*scale;
+    const dx=mouse.x-tx,dy=mouse.y-ty,d=Math.hypot(dx,dy);
+    if(d<nd){nd=d;nearest=p}
+    if(d<130){tx-=dx*.06;ty-=dy*.06}
+    p.x+=((tx-p.x)*.08+p.vx);p.y+=((ty-p.y)*.08+p.vy);p.vx*=.82;p.vy*=.82;
+    const c=color(p.value,data.maxPulse);
+    const alpha=p.value==null?.08:(active?.92:.24)+(selectedBird?.25:0);
+    const radius=(active?3.6:1.5)+(p.value||0)*1.3+(selectedBird?1.2:0);
+    ctx.beginPath();ctx.fillStyle=c;ctx.globalAlpha=.08;ctx.arc(p.x,p.y,radius*7,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.globalAlpha=alpha;ctx.fillStyle=c;ctx.arc(p.x,p.y,radius,0,Math.PI*2);ctx.fill();
+    if(p.bird.status==="recorded dead"&&active){ctx.strokeStyle="#ff4f64";ctx.globalAlpha=.42;ctx.lineWidth=1;ctx.beginPath();ctx.arc(p.x,p.y,radius*2.8,0,Math.PI*2);ctx.stroke()}
+  });
+  ctx.globalAlpha=1;
+  if(nearest&&nd<62){
+    showTip(nearest,mouse.x,mouse.y);
+  }else hideTip();
+  requestAnimationFrame(draw);
+}
+function showTip(p,x,y){
+  const t=document.getElementById("tip");
+  t.innerHTML=`<b>${p.bird.name}</b><br>${data.months[p.mi]}<br>pulse: ${p.value??"no sample"}<br>${p.bird.status}`;
+  t.style.left=x+"px";t.style.top=y+"px";t.style.opacity=1;
+}
+function hideTip(){document.getElementById("tip").style.opacity=0}
+function updateInspector(){
+  const b=data.birds[selected], box=document.getElementById("inspector");
+  document.getElementById("iName").textContent=b.name;
+  document.getElementById("iMeta").textContent=`${b.records.toLocaleString()} sampled bursts · ${b.first} to ${b.last} · ${b.status}`;
+  const bars=document.getElementById("bars");bars.replaceChildren();
+  b.monthly.forEach((v,i)=>{const el=document.createElement("i");el.style.height=(8+(v||0)/data.maxPulse*76)+"px";el.style.opacity=v==null?.18:(i===month?1:.62);bars.appendChild(el)});
+  box.classList.add("on");
+}
+canvas.addEventListener("mousemove",e=>{mouse.x=e.clientX;mouse.y=e.clientY});
+canvas.addEventListener("mouseleave",()=>{mouse.x=-9999;mouse.y=-9999});
+canvas.addEventListener("click",()=>{
+  let nearest=null,nd=9999;
+  particles.forEach(p=>{const d=Math.hypot(mouse.x-p.x,mouse.y-p.y);if(d<nd){nd=d;nearest=p}});
+  if(nearest&&nd<80){selected=nearest.bi;document.getElementById("birdSelect").value=selected;updateInspector()}
+});
+fetch("data/sky_pulse_ecosystem.json").then(r=>r.json()).then(payload=>{
+  data=payload;document.getElementById("scrub").max=data.months.length-1;
+  const sel=document.getElementById("birdSelect");
+  data.birds.forEach((b,i)=>{let o=document.createElement("option");o.value=i;o.textContent=b.name;sel.appendChild(o)});
+  sel.onchange=e=>{selected=+e.target.value;updateInspector()};
+  document.getElementById("scrub").oninput=e=>{month=+e.target.value;updateInspector()};
+  [["all","all"],["dead","recorded dead"],["open","open record"]].forEach(([id,m])=>{
+    document.getElementById(id).onclick=()=>{mode=m;["all","dead","open"].forEach(x=>document.getElementById(x).classList.remove("on"));document.getElementById(id).classList.add("on");makeParticles()}
+  });
+  document.getElementById("play").onclick=()=>{
+    if(playTimer){clearInterval(playTimer);playTimer=null;document.getElementById("play").textContent="play";return}
+    document.getElementById("play").textContent="pause";
+    playTimer=setInterval(()=>{month=(month+1)%data.months.length;document.getElementById("scrub").value=month;updateInspector()},220);
+  };
+  makeParticles();updateInspector();requestAnimationFrame(draw);
+});
+</script>
+</body>
+</html>

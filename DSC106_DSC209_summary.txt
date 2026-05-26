@@ -1,0 +1,441 @@
+
+DSC 106 + DSC 209 DATA VISUALIZATION SUMMARY
+“What I Learned”
+
+==================================================
+CORE IDEA OF DATA VISUALIZATION
+==================================================
+
+Visualization is the transformation of data into visual form so humans can understand patterns, trends, comparisons, relationships, and stories more easily.
+
+Good visualization is not just “making charts.”
+It is about:
+- communicating information clearly
+- reducing cognitive effort
+- helping people think
+- guiding attention
+- supporting interaction and exploration
+
+Visualization amplifies cognition.
+
+==================================================
+WHY VISUALIZATION MATTERS
+==================================================
+
+Modern society produces massive amounts of data:
+- sensors
+- social media
+- climate models
+- medicine
+- economics
+- GPS and human activity
+
+The important skill is not just collecting data:
+it is understanding and communicating it.
+
+Visualization can:
+- reveal patterns
+- expose bias
+- support decision making
+- explain systems
+- tell stories
+- make abstract information understandable
+
+But visualization can also mislead people if designed poorly.
+
+==================================================
+DATA TYPES
+==================================================
+
+I learned four major data types:
+
+1. Nominal
+Categories with no order
+Examples:
+- fruit type
+- company
+- gender
+- country
+
+2. Ordinal
+Ordered categories
+Examples:
+- rankings
+- grades
+- survey scales
+
+3. Quantitative Interval
+Numeric with arbitrary zero
+Examples:
+- dates
+- temperature in Celsius
+
+4. Quantitative Ratio
+Numeric with meaningful zero
+Examples:
+- weight
+- height
+- counts
+- money
+
+Different data types require different visual encodings.
+
+==================================================
+VISUAL VARIABLES / ENCODINGS
+==================================================
+
+Visual variables are the ways we visually represent data.
+
+Examples:
+- position
+- length
+- angle
+- area
+- color
+- shape
+- motion
+- saturation
+
+Most effective quantitative encodings:
+1. position on common scale
+2. position on unaligned scale
+3. length
+4. angle
+5. area
+6. volume
+
+For categories:
+- color hue
+- shape
+- spatial grouping
+
+Key lesson:
+Not all encodings are equally effective.
+
+==================================================
+MARKS
+==================================================
+
+Marks are the basic geometric objects in visualization.
+
+Main marks:
+- point
+- line
+- bar
+- area
+- arc
+- text
+
+Examples:
+- scatterplot uses points
+- line chart uses lines
+- bar chart uses bars
+
+==================================================
+EXPRESSIVENESS VS EFFECTIVENESS
+==================================================
+
+Expressive:
+A chart represents all and only the information in the data.
+
+Effective:
+The information is easy for humans to perceive correctly.
+
+A chart can be expressive but not effective.
+
+==================================================
+GRAPHICAL PERCEPTION
+==================================================
+
+Humans interpret some visual patterns more accurately than others.
+
+Key concepts:
+- perceptual work
+- cognitive work
+- signal detection
+- selective attention
+- gestalt grouping
+- preattentive processing
+
+Preattentive features:
+Humans instantly notice:
+- color changes
+- motion
+- orientation
+- size differences
+
+Good visualizations use these naturally.
+
+==================================================
+JUST NOTICEABLE DIFFERENCE (JND)
+==================================================
+
+Humans perceive changes relatively, not absolutely.
+
+Small differences are harder to detect when values are already large.
+
+Ratios matter more than raw differences.
+
+==================================================
+COLOR THEORY
+==================================================
+
+I learned how humans perceive color.
+
+Topics:
+- visible light spectrum
+- wavelengths
+- RGB additive color
+- CMYK subtractive color
+- cone response in retina
+- opponent encoding
+
+Color uses:
+- categorical distinction
+- emphasis
+- sequential values
+- diverging scales
+
+Bad color usage can:
+- hide information
+- confuse users
+- create accessibility problems
+
+==================================================
+MAPS & GEOGRAPHIC VISUALIZATION
+==================================================
+
+Maps are useful when:
+- data has geographic attributes
+- geography itself matters
+
+Key lesson:
+Maps distort reality because Earth is spherical.
+
+Different map projections preserve different properties:
+- area
+- distance
+- direction
+- shape
+
+A map is never perfectly accurate.
+
+==================================================
+NARRATIVE VISUALIZATION
+==================================================
+
+Visualization can tell stories.
+
+Interactive articles combine:
+- text
+- charts
+- animation
+- user interaction
+
+Good narrative visualization:
+- connects users to data
+- personalizes experience
+- encourages exploration
+- explains systems clearly
+
+==================================================
+ANIMATION
+==================================================
+
+Animation helps:
+- direct attention
+- explain transitions
+- increase engagement
+- show processes over time
+
+Smooth motion perception starts around:
+10 frames per second.
+
+Too much animation can distract users.
+
+==================================================
+INTERACTION DESIGN
+==================================================
+
+Interaction allows users to explore data themselves.
+
+Key concepts:
+- filters
+- hover interactions
+- brushing
+- zooming
+- tooltips
+- selection
+
+Don Norman concepts:
+1. Gulf of Execution
+Difficulty of using interface
+
+2. Gulf of Evaluation
+Difficulty understanding results
+
+Goal:
+Reduce both gulfs.
+
+==================================================
+D3.JS
+==================================================
+
+D3 is a JavaScript visualization library.
+
+Core ideas:
+- manipulate SVG elements
+- bind data to visual elements
+- create interactive graphics
+
+Important concepts:
+- selections
+- data joins
+- scales
+- axes
+- SVG attributes
+
+Examples:
+d3.select()
+selectAll()
+.data()
+.join()
+
+==================================================
+DATA JOINS
+==================================================
+
+D3 automatically loops through data internally.
+
+Pattern:
+1. select elements
+2. bind data
+3. create/update/remove elements
+
+This is one of the most important D3 concepts.
+
+==================================================
+SCALES
+==================================================
+
+Scales map:
+DATA SPACE -> SCREEN SPACE
+
+Example:
+temperature values -> pixel positions
+
+Types:
+- linear scales
+- band scales
+- time scales
+- color scales
+
+==================================================
+JAVASCRIPT FUNDAMENTALS
+==================================================
+
+HTML:
+defines content
+
+CSS:
+defines style
+
+JavaScript:
+manipulates HTML and CSS
+
+Key concepts:
+- event listeners
+- DOM manipulation
+- async / await
+- user interaction
+
+Event-driven programming:
+Code can re-run based on user actions.
+
+==================================================
+ASYNC / AWAIT
+==================================================
+
+Async programming prevents the webpage from freezing.
+
+Useful when:
+- loading datasets
+- waiting for downloads
+- making API requests
+
+await:
+lets browser continue other tasks while waiting.
+
+==================================================
+GENAI PHILOSOPHY
+==================================================
+
+GenAI can help:
+- generate prototypes
+- brainstorm ideas
+- write simple code
+- speed up workflow
+
+But I still need to understand:
+- visualization principles
+- perception
+- design reasoning
+- D3 abstractions
+
+The goal is not memorization.
+The goal is understanding design and communication.
+
+==================================================
+CLIMATE VISUALIZATION
+==================================================
+
+I learned about climate datasets:
+- CMIP6
+- GOES
+- MODIS
+
+Climate data includes:
+- large spatial grids
+- time series
+- uncertainty
+- simulations
+
+Climate models are:
+not exact predictions,
+but plausible future scenarios.
+
+==================================================
+ML FOR CLIMATE
+==================================================
+
+Machine learning can:
+- emulate climate models
+- analyze aerosol effects
+- predict climate patterns
+
+Important distinction:
+Weather and climate are different problems.
+
+==================================================
+MOST IMPORTANT OVERALL TAKEAWAYS
+==================================================
+
+1. Visualization is communication.
+
+2. The best chart is not always the fanciest chart.
+
+3. Human perception determines good design.
+
+4. Position and length are usually the most accurate encodings.
+
+5. Interaction makes visualization exploratory.
+
+6. Color should be intentional, not decorative.
+
+7. Animation should support understanding.
+
+8. D3 connects data directly to visual elements.
+
+9. Maps are powerful but distort reality.
+
+10. Good visualization reduces cognitive load and helps people think.

@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>White storks: the shorter migration</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;650;750&display=swap");
+
+    :root {
+      --water: #2e6e63;
+      --water-deep: #1f5048;
+      --land: #f6eedd;
+      --ink: #2b2118;
+      --ink-soft: #584a34;
+      --olive: #7a6a3a;
+      --cream: #fbf8f0;
+      --gold: #f2d27e;
+      --orange: #d9842f;
+      --rust: #6e2420;
+      --teal: #2e6e63;
+      --red: #c0392b;
+      --paper: rgba(251, 248, 240, 0.94);
+      --paper-soft: rgba(246, 238, 221, 0.78);
+      --shadow: 0 24px 70px rgba(43, 33, 24, 0.24);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--water);
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(180deg, #316f64 0%, #2e6e63 52%, #25594f 100%);
+      line-height: 1.65;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    .experience {
+      position: relative;
+      min-height: 620vh;
+    }
+
+    .map-stage {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--water);
+      border-bottom: 1px solid rgba(43, 33, 24, 0.22);
+    }
+
+    .map-frame {
+      position: absolute;
+      inset: 0;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background:
+        radial-gradient(circle at 24% 18%, rgba(246, 238, 221, 0.16), transparent 27%),
+        linear-gradient(180deg, #36786d 0%, #2e6e63 50%, #23554d 100%);
+    }
+
+    .land {
+      fill: var(--land);
+      stroke: rgba(122, 106, 58, 0.24);
+      stroke-width: 0.45;
+    }
+
+    .borders {
+      fill: none;
+      stroke: var(--olive);
+      stroke-opacity: 0.28;
+      stroke-width: 0.45;
+      vector-effect: non-scaling-stroke;
+      pointer-events: none;
+    }
+
+    .route-segment {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1;
+      stroke-opacity: 0.7;
+      mix-blend-mode: multiply;
+      vector-effect: non-scaling-stroke;
+      pointer-events: none;
+    }
+
+    .route-path {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.1;
+      stroke-opacity: 0;
+      vector-effect: non-scaling-stroke;
+      pointer-events: none;
+    }
+
+    .route-hit {
+      fill: none;
+      stroke: transparent;
+      stroke-width: 14;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+      pointer-events: stroke;
+    }
+
+    .active-path {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2.8;
+      stroke-opacity: 0;
+      vector-effect: non-scaling-stroke;
+      filter: drop-shadow(0 0 7px rgba(192, 93, 58, 0.45));
+      pointer-events: none;
+    }
+
+    .bird-dot {
+      fill: var(--cream);
+      stroke: var(--red);
+      stroke-width: 1.2;
+      vector-effect: non-scaling-stroke;
+      cursor: pointer;
+    }
+
+    .bird-dot.active {
+      filter: drop-shadow(0 0 10px rgba(251, 248, 240, 0.9));
+    }
+
+    .map-label {
+      fill: rgba(43, 33, 24, 0.58);
+      font-size: 5.5px;
+      font-weight: 750;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      pointer-events: none;
+      paint-order: stroke;
+      stroke: rgba(246, 238, 221, 0.78);
+      stroke-width: 1.2px;
+      stroke-linejoin: round;
+    }
+
+    .story {
+      position: relative;
+      width: min(430px, calc(100vw - 32px));
+      margin-left: clamp(16px, 5vw, 76px);
+      margin-top: -100vh;
+      padding: 10vh 0 70vh;
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    .intro,
+    .step {
+      pointer-events: auto;
+      background: var(--paper);
+      border: 1px solid rgba(122, 106, 58, 0.22);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .intro {
+      padding: clamp(24px, 4vw, 42px);
+      margin-bottom: 46vh;
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--rust);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2 {
+      font-family: "Fraunces", "Spectral", Georgia, serif;
+      line-height: 0.96;
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0 0 22px;
+      font-size: clamp(54px, 8vw, 106px);
+      max-width: 820px;
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: clamp(30px, 4vw, 48px);
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--ink-soft);
+      font-size: 16px;
+    }
+
+    .intro p {
+      max-width: 560px;
+      font-size: 17px;
+      color: #3b3126;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .stat {
+      padding: 12px;
+      border: 1px solid rgba(122, 106, 58, 0.22);
+      background: rgba(246, 238, 221, 0.58);
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--ink);
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .stat span {
+      color: var(--ink-soft);
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .step {
+      padding: 24px;
+      margin: 0 0 74vh;
+      opacity: 0.42;
+      transform: translateY(18px);
+      transition: opacity 280ms ease, transform 280ms ease;
+    }
+
+    .step.is-active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .step p:last-child {
+      margin-bottom: 0;
+    }
+
+    .controls {
+      position: absolute;
+      z-index: 12;
+      right: clamp(14px, 3vw, 34px);
+      top: clamp(14px, 3vw, 28px);
+      width: min(420px, calc(100vw - 28px));
+      padding: 14px;
+      background: rgba(251, 248, 240, 0.91);
+      border: 1px solid rgba(122, 106, 58, 0.26);
+      box-shadow: 0 16px 48px rgba(43, 33, 24, 0.18);
+      backdrop-filter: blur(12px);
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .control-button {
+      min-height: 38px;
+      padding: 8px 13px;
+      border: 1px solid rgba(43, 33, 24, 0.24);
+      background: #fff8e7;
+      color: var(--ink);
+      font-weight: 750;
+      cursor: pointer;
+      transition: background 160ms ease, transform 160ms ease, border-color 160ms ease;
+    }
+
+    .control-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(43, 33, 24, 0.5);
+    }
+
+    .control-button[aria-pressed="true"] {
+      color: var(--cream);
+      background: var(--rust);
+      border-color: var(--rust);
+    }
+
+    .scrubber-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    #day-slider {
+      width: 100%;
+      accent-color: var(--rust);
+      margin: 8px 0 4px;
+      cursor: pointer;
+    }
+
+    .month-ticks {
+      position: relative;
+      height: 20px;
+      margin-bottom: 8px;
+      color: var(--ink-soft);
+      font-size: 10px;
+      font-weight: 750;
+    }
+
+    .month-ticks span {
+      position: absolute;
+      top: 0;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+
+    .legends {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+      color: var(--ink-soft);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .legend-title {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .ramp {
+      height: 9px;
+      margin-bottom: 6px;
+      background: linear-gradient(90deg, #f2d27e, #e8b04b, #d9842f, #c45d3a, #9b3b2e, #6e2420);
+      border: 1px solid rgba(43, 33, 24, 0.2);
+    }
+
+    .legend-keys {
+      display: grid;
+      gap: 6px;
+    }
+
+    .legend-key {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .swatch {
+      width: 22px;
+      height: 4px;
+      display: inline-block;
+      border-radius: 99px;
+    }
+
+    .chart-card {
+      position: absolute;
+      z-index: 12;
+      right: clamp(14px, 3vw, 34px);
+      bottom: clamp(14px, 3vw, 28px);
+      width: min(420px, calc(100vw - 28px));
+      padding: 14px;
+      background: rgba(251, 248, 240, 0.9);
+      border: 1px solid rgba(122, 106, 58, 0.26);
+      box-shadow: 0 16px 48px rgba(43, 33, 24, 0.16);
+      backdrop-filter: blur(12px);
+    }
+
+    .chart-card h3 {
+      margin: 0 0 2px;
+      color: var(--ink);
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .chart-card p {
+      margin: 0 0 8px;
+      font-size: 12px;
+      color: var(--ink-soft);
+    }
+
+    #calendar-chart {
+      width: 100%;
+      height: 132px;
+      display: block;
+    }
+
+    .axis path,
+    .axis line {
+      stroke: rgba(43, 33, 24, 0.45);
+      shape-rendering: crispEdges;
+    }
+
+    .axis text {
+      fill: var(--ink-soft);
+      font-size: 10px;
+      font-weight: 650;
+    }
+
+    .axis-label {
+      fill: var(--ink);
+      font-size: 10px;
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .tooltip {
+      position: fixed;
+      z-index: 30;
+      max-width: 260px;
+      padding: 10px 12px;
+      background: rgba(43, 33, 24, 0.94);
+      color: var(--cream);
+      border: 1px solid rgba(251, 248, 240, 0.2);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(12px, 10px);
+      transition: opacity 120ms ease;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .tooltip strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+      color: #fff8e7;
+    }
+
+    .credit {
+      position: absolute;
+      left: clamp(14px, 3vw, 34px);
+      bottom: clamp(12px, 2vw, 20px);
+      z-index: 4;
+      max-width: 520px;
+      color: rgba(251, 248, 240, 0.86);
+      text-shadow: 0 1px 2px rgba(43, 33, 24, 0.25);
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .source-note {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(122, 106, 58, 0.2);
+      color: var(--ink-soft);
+      font-size: 10px;
+      font-weight: 750;
+      letter-spacing: 0.09em;
+      line-height: 1.45;
+      text-transform: uppercase;
+    }
+
+    .loading {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      background: var(--water);
+      color: var(--cream);
+      font-size: 13px;
+      font-weight: 750;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      transition: opacity 220ms ease;
+    }
+
+    .loading.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @media (max-width: 980px) {
+      .story {
+        padding-top: 64vh;
+      }
+
+      .intro,
+      .step {
+        width: min(520px, calc(100vw - 32px));
+      }
+
+      .controls,
+      .chart-card {
+        position: fixed;
+      }
+
+      .chart-card {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .controls {
+        top: auto;
+        bottom: 12px;
+      }
+
+      .legends {
+        grid-template-columns: 1fr;
+      }
+
+      .button-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .button-row button:first-child {
+        grid-column: 1 / -1;
+      }
+
+      h1 {
+        font-size: 54px;
+      }
+
+      .stat-row {
+        grid-template-columns: 1fr;
+      }
+
+      .credit {
+        display: none;
+      }
+    }
+
+    body.figure-capture .story,
+    body.figure-capture .chart-card {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main class="experience">
+    <section class="map-stage" aria-label="Interactive map of white stork migration routes">
+      <div class="loading" id="loading">Loading real GPS tracks</div>
+      <div class="map-frame">
+        <svg id="map" role="img" aria-label="Map of Europe, North Africa, and stork GPS migration routes"></svg>
+      </div>
+
+      <section class="controls" aria-label="Migration controls">
+        <div class="button-row">
+          <button class="control-button" id="play-button" type="button" aria-pressed="false">Play / Pause</button>
+          <button class="control-button" id="season-button" type="button" aria-pressed="true">Show all routes</button>
+          <button class="control-button" id="split-button" type="button" aria-pressed="false">Africa vs Spain</button>
+        </div>
+        <div class="scrubber-top">
+          <span>Migration time</span>
+          <span id="date-label">Jul 01</span>
+        </div>
+        <input id="day-slider" type="range" min="0" max="273" step="1" value="0" aria-label="Migration time scrubber from July to March">
+        <div class="month-ticks" id="month-ticks" aria-hidden="true"></div>
+        <div class="legends">
+          <div>
+            <span class="legend-title">Time of year</span>
+            <div class="ramp"></div>
+            <div>Gold starts the season. Rust marks later winter movement.</div>
+          </div>
+          <div>
+            <span class="legend-title">Winter strategy</span>
+            <div class="legend-keys">
+              <span class="legend-key"><span class="swatch" style="background:#6e2420"></span>Africa crossing</span>
+              <span class="legend-key"><span class="swatch" style="background:#2e6e63"></span>Spain / short-stopper</span>
+            </div>
+          </div>
+        </div>
+        <div class="source-note">Source: Movebank Data Repository, LifeTrack White Stork SW Germany GPS data, DOI 10.5441/001/1.ck04mn78</div>
+      </section>
+
+      <section class="chart-card" aria-label="Small chart showing tracked routes through the migration season">
+        <h3>Tracked routes through time</h3>
+        <p>The marker follows the same day as the map scrubber.</p>
+        <svg id="calendar-chart" role="img" aria-label="Line chart of tracked birds by migration day"></svg>
+      </section>
+
+      <div class="tooltip" id="tooltip"></div>
+      <div class="credit" aria-hidden="true"></div>
+    </section>
+
+    <section class="story" aria-label="Scrollytelling text">
+      <article class="intro step is-active" data-camera="full" data-day="0" data-mode="season">
+        <p class="eyebrow">White stork migration, 2013-2019</p>
+        <h1>The shorter way south</h1>
+        <p>Every line is a real GPS track. The map begins in southwest Germany, then follows white storks as they move through France, Spain, North Africa, and the western Sahel.</p>
+        <p>The old instinct still points toward Africa. But many birds now stop closer to home.</p>
+        <div class="stat-row">
+          <div class="stat"><strong id="stat-birds">71</strong><span>complete tracks</span></div>
+          <div class="stat"><strong id="stat-spain">65%</strong><span>short-stoppers</span></div>
+          <div class="stat"><strong id="stat-africa">25</strong><span>Africa crossings</span></div>
+        </div>
+      </article>
+
+      <article class="step" data-camera="germany" data-day="42" data-mode="season">
+        <p class="eyebrow">1 / Departure</p>
+        <h2>A field in Germany becomes a launch point.</h2>
+        <p>In late summer, the flock leaves a tight nesting region near Lake Constance. The cream dots are current positions at the selected day; they stay small so the flock never becomes a white blob.</p>
+      </article>
+
+      <article class="step" data-camera="western" data-day="80" data-mode="season">
+        <p class="eyebrow">2 / The funnel</p>
+        <h2>The routes pull southwest.</h2>
+        <p>Gold trails mark the early season. As the scrubber moves into autumn, later segments turn orange and rust, showing the migration unfold rather than summarizing it all at once.</p>
+      </article>
+
+      <article class="step" data-camera="split" data-day="115" data-mode="destination">
+        <p class="eyebrow">3 / The split</p>
+        <h2>Two winter strategies appear on the same map.</h2>
+        <p>Rust routes continue into Africa. River-teal routes stop in Spain or nearby western Europe and North Africa. The color switch is the main story: a long migration is being shortened.</p>
+      </article>
+
+      <article class="step" data-camera="iberia" data-day="152" data-mode="destination">
+        <p class="eyebrow">4 / Closer to home</p>
+        <h2>Spain becomes a wintering landscape.</h2>
+        <p>Short-stopping is not a decorative cluster. It is geography: birds remain around the Iberian Peninsula instead of crossing the Sahara, making the survival tradeoff visible as distance on a map.</p>
+      </article>
+
+      <article class="step" data-camera="africa" data-day="188" data-mode="destination">
+        <p class="eyebrow">5 / The older path</p>
+        <h2>A smaller group keeps crossing.</h2>
+        <p>Follow an individual route with your cursor. The highlighted path is the only glow; the rest of the flock stays quiet so single-bird stories can be read without losing the geography.</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const svg = d3.select("#map").attr("viewBox", [0, 0, width, height]);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("figure") === "1") {
+      document.body.classList.add("figure-capture");
+    }
+    const mapRoot = svg.append("g").attr("class", "map-root");
+    const basemapLayer = mapRoot.append("g").attr("class", "basemap-layer");
+    const segmentLayer = mapRoot.append("g").attr("class", "segment-layer");
+    const pathLayer = mapRoot.append("g").attr("class", "path-layer");
+    const hitLayer = mapRoot.append("g").attr("class", "hit-layer");
+    const labelLayer = mapRoot.append("g").attr("class", "label-layer");
+    const dotLayer = mapRoot.append("g").attr("class", "dot-layer");
+    const activeLayer = mapRoot.append("g").attr("class", "active-layer");
+    const activePath = activeLayer.append("path").attr("class", "active-path");
+
+    const tooltip = d3.select("#tooltip");
+    const slider = d3.select("#day-slider");
+    const dateLabel = d3.select("#date-label");
+    const loading = d3.select("#loading");
+    const seasonButton = d3.select("#season-button");
+    const splitButton = d3.select("#split-button");
+    const playButton = d3.select("#play-button");
+    const statBirds = d3.select("#stat-birds");
+    const statSpain = d3.select("#stat-spain");
+    const statAfrica = d3.select("#stat-africa");
+
+    const projection = d3.geoMercator();
+    const geoPath = d3.geoPath(projection);
+    const routeLine = d3.line()
+      .defined(d => projection([d.lon, d.lat]))
+      .x(d => projection([d.lon, d.lat])[0])
+      .y(d => projection([d.lon, d.lat])[1])
+      .curve(d3.curveCatmullRom.alpha(0.35));
+
+    const seasonColor = d3.scaleLinear()
+      .domain([0, 55, 95, 135, 185, 273])
+      .range(["#F2D27E", "#E8B04B", "#D9842F", "#C45D3A", "#9B3B2E", "#6E2420"])
+      .interpolate(d3.interpolateRgb.gamma(2.2));
+
+    const destinationColor = {
+      "Africa crossing": "#6E2420",
+      "Spain / short-stopper": "#2E6E63"
+    };
+
+    const cameras = {
+      full: { lon0: -19, lat0: -28, lon1: 37, lat1: 57 },
+      germany: { lon0: 3.5, lat0: 44.5, lon1: 15.5, lat1: 53.5 },
+      western: { lon0: -12, lat0: 33, lon1: 16, lat1: 53 },
+      split: { lon0: -18, lat0: 12, lon1: 20, lat1: 52 },
+      iberia: { lon0: -12, lat0: 34, lon1: 6, lat1: 45 },
+      africa: { lon0: -18, lat0: 8, lon1: 20, lat1: 38 }
+    };
+
+    const bisectDay = d3.bisector(d => d.day).left;
+    let routes = [];
+    let allSegments = [];
+    let currentDay = 0;
+    let mode = "season";
+    let activeRoute = null;
+    let playing = false;
+    let timer = null;
+    let chart = null;
+    let currentScale = 1;
+
+    Promise.all([
+      d3.json("data/countries-110m.json"),
+      d3.json("data/stork_migration_map.json")
+    ]).then(([world, migration]) => {
+      const countries = topojson.feature(world, world.objects.countries);
+      const borders = topojson.mesh(world, world.objects.countries, (a, b) => a !== b);
+      const europeAfricaFrame = {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [[
+            [-22, -35],
+            [45, -35],
+            [45, 60],
+            [-22, 60],
+            [-22, -35]
+          ]]
+        }
+      };
+      projection.fitExtent([[26, 26], [width - 26, height - 26]], europeAfricaFrame);
+
+      routes = migration.routes.map((route, i) => ({ ...route, key: `route-${i}` }));
+      routes.forEach(route => {
+        route.points.forEach(point => {
+          point.routeKey = route.key;
+          point.destination = route.destination;
+          point.name = route.name;
+          point.season = route.season;
+        });
+      });
+
+      allSegments = routes.flatMap(route => {
+        const segments = [];
+        for (let i = 1; i < route.points.length; i += 1) {
+          const a = route.points[i - 1];
+          const b = route.points[i];
+          segments.push({
+            routeKey: route.key,
+            destination: route.destination,
+            day: (a.day + b.day) / 2,
+            a,
+            b
+          });
+        }
+        return segments;
+      });
+
+      statBirds.text(migration.summary.birds);
+      statSpain.text(`${Math.round(migration.summary.spainShare * 100)}%`);
+      statAfrica.text(migration.summary.africaCrossing);
+      drawBasemap(countries, borders);
+      drawRoutes();
+      drawLabels();
+      drawTicks(migration.domain.monthTicks, migration.domain.endDay);
+      chart = drawCalendarChart(migration.seasonalCounts, migration.domain.monthTicks);
+      updateMode("season", false);
+      setDay(0);
+      setCamera("full", false);
+      setupScroll();
+      setupControls();
+      applyUrlState();
+      loading.classed("is-hidden", true);
+    }).catch(error => {
+      loading.text(`Map failed to load: ${error.message}`);
+      console.error(error);
+    });
+
+    function drawBasemap(countries, borders) {
+      basemapLayer.selectAll("path.land")
+        .data(countries.features)
+        .join("path")
+        .attr("class", "land")
+        .attr("d", geoPath);
+
+      basemapLayer.append("path")
+        .datum(borders)
+        .attr("class", "borders")
+        .attr("d", geoPath);
+    }
+
+    function drawRoutes() {
+      pathLayer.selectAll("path.route-path")
+        .data(routes, d => d.key)
+        .join("path")
+        .attr("class", "route-path")
+        .attr("d", d => routeLine(d.points))
+        .attr("stroke", d => destinationColor[d.destination]);
+
+      hitLayer.selectAll("path.route-hit")
+        .data(routes, d => d.key)
+        .join("path")
+        .attr("class", "route-hit")
+        .attr("d", d => routeLine(d.points))
+        .on("mouseenter", (event, route) => setActiveRoute(route, event))
+        .on("mousemove", moveTooltip)
+        .on("mouseleave", clearActiveRoute);
+
+      segmentLayer.selectAll("line.route-segment")
+        .data(allSegments)
+        .join("line")
+        .attr("class", "route-segment")
+        .attr("x1", d => projection([d.a.lon, d.a.lat])[0])
+        .attr("y1", d => projection([d.a.lon, d.a.lat])[1])
+        .attr("x2", d => projection([d.b.lon, d.b.lat])[0])
+        .attr("y2", d => projection([d.b.lon, d.b.lat])[1])
+        .attr("stroke", d => seasonColor(d.day));
+    }
+
+    function drawLabels() {
+      const labels = [
+        { name: "Germany", lon: 10.2, lat: 51.4 },
+        { name: "Spain", lon: -3.6, lat: 40.1 },
+        { name: "Morocco", lon: -6.5, lat: 31.5 },
+        { name: "Mali", lon: -4.2, lat: 17.2 },
+        { name: "Sahara", lon: 7, lat: 25.5 }
+      ];
+      labelLayer.selectAll("text")
+        .data(labels)
+        .join("text")
+        .attr("class", "map-label")
+        .attr("x", d => projection([d.lon, d.lat])[0])
+        .attr("y", d => projection([d.lon, d.lat])[1])
+        .attr("text-anchor", "middle")
+        .text(d => d.name);
+    }
+
+    function drawTicks(ticks, endDay) {
+      const wrap = d3.select("#month-ticks");
+      wrap.selectAll("span")
+        .data(ticks)
+        .join("span")
+        .style("left", d => `${(d.day / endDay) * 100}%`)
+        .text(d => d.label);
+    }
+
+    function drawCalendarChart(counts, ticks) {
+      const svgChart = d3.select("#calendar-chart");
+      const box = svgChart.node().getBoundingClientRect();
+      const cw = box.width || 390;
+      const ch = box.height || 132;
+      const margin = { top: 10, right: 14, bottom: 34, left: 38 };
+      svgChart.attr("viewBox", [0, 0, cw, ch]);
+
+      const x = d3.scaleLinear().domain([0, 273]).range([margin.left, cw - margin.right]);
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(counts, d => d.n)]).nice()
+        .range([ch - margin.bottom, margin.top]);
+
+      const area = d3.area()
+        .x(d => x(d.season_day))
+        .y0(y(0))
+        .y1(d => y(d.n))
+        .curve(d3.curveMonotoneX);
+
+      svgChart.append("path")
+        .datum(counts)
+        .attr("fill", "rgba(110, 36, 32, 0.18)")
+        .attr("d", area);
+
+      svgChart.append("path")
+        .datum(counts)
+        .attr("fill", "none")
+        .attr("stroke", "#6E2420")
+        .attr("stroke-width", 1.7)
+        .attr("d", d3.line().x(d => x(d.season_day)).y(d => y(d.n)).curve(d3.curveMonotoneX));
+
+      svgChart.append("g")
+        .attr("class", "axis")
+        .attr("transform", `translate(0,${ch - margin.bottom})`)
+        .call(d3.axisBottom(x).tickValues(ticks.map(d => d.day)).tickFormat((d, i) => ticks[i].label));
+
+      svgChart.append("g")
+        .attr("class", "axis")
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(3));
+
+      svgChart.append("text")
+        .attr("class", "axis-label")
+        .attr("x", (margin.left + cw - margin.right) / 2)
+        .attr("y", ch - 6)
+        .attr("text-anchor", "middle")
+        .text("Migration season");
+
+      svgChart.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -ch / 2)
+        .attr("y", 11)
+        .attr("text-anchor", "middle")
+        .text("Birds");
+
+      const marker = svgChart.append("line")
+        .attr("class", "chart-marker")
+        .attr("y1", margin.top)
+        .attr("y2", ch - margin.bottom)
+        .attr("stroke", "#2B2118")
+        .attr("stroke-width", 1.4)
+        .attr("stroke-dasharray", "3 3");
+
+      return { x, marker };
+    }
+
+    function setupControls() {
+      slider.on("input", event => {
+        pause();
+        setDay(+event.target.value);
+      });
+
+      playButton.on("click", () => {
+        if (playing) {
+          pause();
+        } else {
+          play();
+        }
+      });
+
+      seasonButton.on("click", () => updateMode("season", true));
+      splitButton.on("click", () => updateMode("destination", true));
+    }
+
+    function applyUrlState() {
+      const urlDay = params.get("day");
+      const urlMode = params.get("mode");
+      const urlCamera = params.get("camera");
+      if (urlMode === "season" || urlMode === "destination") {
+        updateMode(urlMode, false);
+      }
+      if (urlDay !== null && !Number.isNaN(+urlDay)) {
+        setDay(+urlDay);
+      }
+      if (urlCamera && cameras[urlCamera]) {
+        setCamera(urlCamera, false);
+      }
+    }
+
+    function setupScroll() {
+      const steps = Array.from(document.querySelectorAll(".step"));
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          steps.forEach(step => step.classList.remove("is-active"));
+          entry.target.classList.add("is-active");
+          const day = +entry.target.dataset.day;
+          const camera = entry.target.dataset.camera;
+          const stepMode = entry.target.dataset.mode;
+          pause();
+          setDay(day);
+          updateMode(stepMode, true);
+          setCamera(camera, true);
+        });
+      }, { root: null, threshold: 0.58 });
+      steps.forEach(step => observer.observe(step));
+    }
+
+    function play() {
+      playing = true;
+      playButton.attr("aria-pressed", "true");
+      timer = d3.interval(() => {
+        const next = currentDay >= 273 ? 0 : currentDay + 1;
+        setDay(next);
+      }, 75);
+    }
+
+    function pause() {
+      playing = false;
+      playButton.attr("aria-pressed", "false");
+      if (timer) {
+        timer.stop();
+        timer = null;
+      }
+    }
+
+    function updateMode(nextMode, animate) {
+      mode = nextMode;
+      seasonButton.attr("aria-pressed", mode === "season" ? "true" : "false");
+      splitButton.attr("aria-pressed", mode === "destination" ? "true" : "false");
+      const t = animate ? d3.transition().duration(420).ease(d3.easeCubicOut) : null;
+
+      segmentLayer.selectAll(".route-segment")
+        .transition(t)
+        .attr("stroke-opacity", mode === "season" ? 0.7 : 0.0);
+
+      pathLayer.selectAll(".route-path")
+        .transition(t)
+        .attr("stroke-opacity", mode === "destination" ? 0.82 : 0.03)
+        .attr("stroke-width", mode === "destination" ? 1.6 : 0.6);
+    }
+
+    function setCamera(cameraName, animate) {
+      const box = cameras[cameraName] || cameras.full;
+      const p0 = projection([box.lon0, box.lat0]);
+      const p1 = projection([box.lon1, box.lat1]);
+      const x0 = Math.min(p0[0], p1[0]);
+      const x1 = Math.max(p0[0], p1[0]);
+      const y0 = Math.min(p0[1], p1[1]);
+      const y1 = Math.max(p0[1], p1[1]);
+      const pad = cameraName === "full" ? 80 : 120;
+      const scale = Math.min((width - pad * 2) / (x1 - x0), (height - pad * 2) / (y1 - y0));
+      currentScale = scale;
+      const tx = width / 2 - scale * (x0 + x1) / 2;
+      const ty = height / 2 - scale * (y0 + y1) / 2;
+      const transform = `translate(${tx},${ty}) scale(${scale})`;
+      mapRoot.transition()
+        .duration(animate ? 900 : 0)
+        .ease(d3.easeCubicInOut)
+        .attr("transform", transform);
+      updateDots();
+    }
+
+    function setDay(day) {
+      currentDay = Math.max(0, Math.min(273, Math.round(day)));
+      slider.property("value", currentDay);
+      dateLabel.text(formatDay(currentDay));
+      updateDots();
+      if (chart) {
+        chart.marker.attr("x1", chart.x(currentDay)).attr("x2", chart.x(currentDay));
+      }
+    }
+
+    function pointForDay(route, day) {
+      const points = route.points;
+      if (!points.length || day < points[0].day) return null;
+      if (day >= points[points.length - 1].day) {
+        return { ...points[points.length - 1], route };
+      }
+      const index = bisectDay(points, day);
+      const before = points[Math.max(0, index - 1)];
+      const after = points[index];
+      if (!before || !after) return null;
+      const span = Math.max(1, after.day - before.day);
+      const t = (day - before.day) / span;
+      return {
+        lon: before.lon + (after.lon - before.lon) * t,
+        lat: before.lat + (after.lat - before.lat) * t,
+        day,
+        date: after.date,
+        speed: after.speed,
+        route
+      };
+    }
+
+    function updateDots() {
+      const positions = routes
+        .map(route => pointForDay(route, currentDay))
+        .filter(Boolean);
+
+      dotLayer.selectAll("circle.bird-dot")
+        .data(positions, d => d.route.key)
+        .join(
+          enter => enter.append("circle")
+            .attr("class", "bird-dot")
+            .attr("cx", d => projection([d.lon, d.lat])[0])
+            .attr("cy", d => projection([d.lon, d.lat])[1])
+            .attr("r", 0)
+            .call(enter => enter.transition().duration(220).attr("r", 3.4 / currentScale)),
+          update => update,
+          exit => exit.transition().duration(160).attr("r", 0).remove()
+        )
+        .classed("active", d => activeRoute && d.route.key === activeRoute.key)
+        .attr("stroke", d => d.route.destination === "Africa crossing" ? "#C0392B" : "#2E6E63")
+        .attr("stroke-width", 1.2 / currentScale)
+        .transition()
+        .duration(140)
+        .attr("r", d => activeRoute && d.route.key === activeRoute.key ? 5 / currentScale : 3.4 / currentScale)
+        .attr("cx", d => projection([d.lon, d.lat])[0])
+        .attr("cy", d => projection([d.lon, d.lat])[1]);
+
+      dotLayer.selectAll("circle.bird-dot")
+        .on("mouseenter", (event, d) => setActiveRoute(d.route, event, d))
+        .on("mousemove", moveTooltip)
+        .on("mouseleave", clearActiveRoute);
+    }
+
+    function setActiveRoute(route, event, point) {
+      activeRoute = route;
+      const color = destinationColor[route.destination];
+      activePath
+        .datum(route)
+        .attr("d", routeLine(route.points))
+        .attr("stroke", color)
+        .transition()
+        .duration(120)
+        .attr("stroke-opacity", 0.95);
+
+      dotLayer.selectAll("circle.bird-dot")
+        .classed("active", d => d.route.key === route.key)
+        .attr("r", d => d.route.key === route.key ? 5 / currentScale : 3.4 / currentScale)
+        .attr("opacity", d => d.route.key === route.key ? 1 : 0.55);
+
+      showTooltip(event, route, point);
+    }
+
+    function clearActiveRoute() {
+      activeRoute = null;
+      activePath.transition().duration(160).attr("stroke-opacity", 0);
+      dotLayer.selectAll("circle.bird-dot")
+        .classed("active", false)
+        .attr("r", 3.4 / currentScale)
+        .attr("opacity", 1);
+      tooltip.style("opacity", 0);
+    }
+
+    function showTooltip(event, route, point) {
+      const p = point || pointForDay(route, currentDay) || route.points[route.points.length - 1];
+      const speedText = p.speed === null || p.speed === undefined ? "not recorded" : `${p.speed} m/s`;
+      tooltip
+        .html(`<strong>${route.name}</strong>${route.destination}<br>Date: ${p.date}<br>Ground speed: ${speedText}<br>Season: ${route.season}`)
+        .style("opacity", 1);
+      moveTooltip(event);
+    }
+
+    function moveTooltip(event) {
+      tooltip
+        .style("left", `${event.clientX}px`)
+        .style("top", `${event.clientY}px`);
+    }
+
+    function formatDay(day) {
+      const date = new Date(Date.UTC(2014, 6, 1 + day));
+      return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", timeZone: "UTC" });
+    }
+  </script>
+</body>
+</html>
