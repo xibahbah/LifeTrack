@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Sky Has a Pulse — DSC 106 Prototype</title>
+<script src="vendor/d3.v7.min.js"></script>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap");
+
+  :root {
+    --bg: #05070d;
+    --bg-soft: #0b1020;
+    --panel: #111827;
+    --line: #26344a;
+    --ink: #f6f9ff;
+    --muted: #93a1b6;
+    --cyan: #47d7ff;
+    --gold: #ffd166;
+    --coral: #ff5c6c;
+    --green: #7cf6bf;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(circle at 18% 6%, rgba(71, 215, 255, 0.12), transparent 32%),
+      radial-gradient(circle at 84% 2%, rgba(255, 92, 108, 0.10), transparent 30%),
+      var(--bg);
+    color: var(--ink);
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+  }
+
+  button, input, select { font: inherit; }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 4vw, 48px);
+  }
+
+  /* ---------- Hook (stubbed scene) ---------- */
+  .hook {
+    min-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8vh 0;
+  }
+
+  .eyebrow {
+    margin: 0 0 18px;
+    color: var(--cyan);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: clamp(52px, 9vw, 132px);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    margin: 0 0 24px;
+    text-shadow: 0 0 70px rgba(71, 215, 255, 0.16);
+  }
+
+  .lede {
+    max-width: 620px;
+    color: var(--muted);
+    font-size: 18px;
+  }
+
+  .hook-stub {
+    margin-top: 36px;
+    padding: 16px 18px;
+    max-width: 620px;
+    border: 1px dashed rgba(147, 161, 182, 0.4);
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .hook-stub b { color: var(--gold); }
+
+  /* ---------- Section scaffold ---------- */
+  .scene {
+    padding: clamp(48px, 9vh, 120px) 0;
+    border-top: 1px solid rgba(38, 52, 74, 0.7);
+  }
+
+  .scene-label {
+    margin: 0 0 10px;
+    color: var(--coral);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: clamp(30px, 4.4vw, 52px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: 0 0 16px;
+  }
+
+  .scene p {
+    max-width: 680px;
+    color: var(--muted);
+    font-size: 16.5px;
+    margin: 0 0 14px;
+  }
+
+  .stub-note {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px dashed rgba(147, 161, 182, 0.38);
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    max-width: 680px;
+  }
+
+  .stub-note b { color: var(--gold); }
+
+  /* ---------- Pulse wall (the real D3 visualization) ---------- */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: center;
+    margin: 28px 0 10px;
+  }
+
+  .controls .group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .ctl {
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: background 140ms ease, border-color 140ms ease;
+  }
+
+  .ctl:hover { border-color: rgba(246, 249, 255, 0.5); }
+
+  .ctl[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+
+  .scrub-label {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  #month-value {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  #month-scrubber {
+    width: clamp(180px, 30vw, 320px);
+    accent-color: var(--cyan);
+    cursor: pointer;
+  }
+
+  .viz-card {
+    margin-top: 8px;
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.92), rgba(5, 7, 13, 0.92));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+  }
+
+  svg { display: block; width: 100%; height: auto; }
+
+  .wall-bg { fill: var(--bg-soft); }
+  .axis-text { fill: var(--muted); font-size: 11px; }
+  .bird-label {
+    fill: var(--muted);
+    font-size: 11.5px;
+    cursor: pointer;
+  }
+  .bird-label.selected { fill: var(--ink); font-weight: 700; }
+  .bird-label:hover { fill: var(--ink); }
+
+  .cell {
+    cursor: pointer;
+    transition: opacity 120ms ease;
+  }
+  .cell:hover { stroke: var(--ink); stroke-width: 1.4; }
+
+  .scrub-line {
+    stroke: var(--ink);
+    stroke-width: 2;
+    opacity: 0.85;
+  }
+  .scrub-cap { fill: var(--ink); font-size: 11px; }
+
+  /* selected-bird detail */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .detail-card {
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.92), rgba(5, 7, 13, 0.92));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    padding: 16px 18px;
+  }
+
+  .detail-card h3 {
+    margin: 0 0 4px;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .detail-name {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 30px;
+    line-height: 1.05;
+    margin: 2px 0 10px;
+  }
+
+  .detail-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin-bottom: 12px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .detail-stats b { color: var(--ink); }
+
+  .pulse-line { fill: none; stroke: var(--gold); stroke-width: 2.4; }
+  .pulse-area { fill: rgba(255, 209, 102, 0.12); }
+  .pulse-dot { fill: var(--cyan); }
+  .pulse-dot.active { fill: var(--coral); }
+
+  .tooltip {
+    position: fixed;
+    z-index: 50;
+    pointer-events: none;
+    max-width: 240px;
+    padding: 9px 11px;
+    background: rgba(5, 7, 13, 0.96);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink);
+    font-size: 12px;
+    line-height: 1.4;
+    opacity: 0;
+    transform: translate(-50%, -118%);
+    transition: opacity 110ms ease;
+  }
+  .tooltip strong { color: var(--gold); }
+
+  /* ---------- Writeup ---------- */
+  .writeup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 10px;
+  }
+
+  .writeup-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: clamp(20px, 3vw, 32px);
+  }
+
+  .writeup-card .q-num {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--cyan);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .writeup-card h3 {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: clamp(20px, 2.3vw, 27px);
+    line-height: 1.08;
+    margin: 0 0 12px;
+  }
+
+  .writeup-card p {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0 0 12px;
+  }
+  .writeup-card p:last-child { margin-bottom: 0; }
+
+  .colophon {
+    margin: 40px 0 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .colophon a { color: var(--gold); }
+
+  footer { padding: 60px 0 90px; }
+
+  @media (max-width: 760px) {
+    .detail-grid, .writeup-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ SCENE 1 — HOOK (stubbed for prototype) ============ -->
+<header class="hook">
+  <div class="wrap">
+    <p class="eyebrow">DSC 106 · Final Project Prototype</p>
+    <h1>The Sky<br>Has a Pulse</h1>
+    <p class="lede">
+      Six years of white stork bio-logging data, told not as a route on a map but
+      as bodily motion over time. Every stork carries an accelerometer; this is a
+      reading of how their bodies move &mdash; and when they stop.
+    </p>
+    <div class="hook-stub">
+      <b>Prototype note —</b> the final opening will be an animated "living sky" of
+      glowing pulses (proposal Figure 1 / Scene 1). For this prototype the hook is a
+      static title; the animated particle scene is planned for after the staff
+      feedback meeting. The graded visualization below is fully built.
+    </div>
+  </div>
+</header>
+
+<!-- ============ SCENE 2 — THE PULSE WALL (real D3 visualization) ============ -->
+<section class="scene" id="scene-wall">
+  <div class="wrap">
+    <p class="scene-label">Scene 2 / Scrub the seasons</p>
+    <h2>Every bird is a row. Every month is a tile.</h2>
+    <p>
+      This is the core visualization: a wall of motion. Each row is one tagged
+      stork, each column is a month from 2013 to 2019, and each tile's color is
+      that bird's median motion "pulse" &mdash; an activity index derived from the
+      tri-axial accelerometer. Brighter tiles are months of stronger body motion.
+    </p>
+    <p>
+      Drag the <b>month scrubber</b> to move a beam of attention through the study
+      period, or <b>click any bird row</b> to open that individual's story below.
+      Hover a tile for the exact value.
+    </p>
+
+    <div class="controls">
+      <div class="group">
+        <button class="ctl" id="mode-all" type="button" aria-pressed="true">All outcomes</button>
+        <button class="ctl" id="mode-dead" type="button" aria-pressed="false">Recorded dead</button>
+        <button class="ctl" id="mode-alive" type="button" aria-pressed="false">No recorded death</button>
+      </div>
+      <div class="group">
+        <span class="scrub-label">Month: <span id="month-value">—</span></span>
+        <input id="month-scrubber" type="range" min="0" value="0" step="1"
+               aria-label="Month scrubber across the study period">
+      </div>
+    </div>
+
+    <div class="viz-card">
+      <svg id="pulse-wall" role="img"
+           aria-label="Heatmap of monthly motion pulse for each tagged white stork"></svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCENE 3 — SELECTED BIRD (real D3 visualization) ============ -->
+<section class="scene" id="scene-bird">
+  <div class="wrap">
+    <p class="scene-label">Scene 3 / Enter one bird</p>
+    <h2>One stork is not a row. It is a rhythm.</h2>
+    <p>
+      Selecting a bird folds the flock down to a single life. The timeline shows
+      that stork's median monthly pulse across the whole study; the clock shows its
+      average activity by hour of day. The scrubber's month is marked on both.
+    </p>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>Monthly pulse timeline</h3>
+        <div class="detail-name" id="bird-name">—</div>
+        <div class="detail-stats" id="bird-stats"></div>
+        <svg id="bird-timeline" role="img" aria-label="Selected bird monthly pulse timeline"></svg>
+      </div>
+      <div class="detail-card">
+        <h3>24-hour rhythm</h3>
+        <svg id="bird-clock" role="img" aria-label="Selected bird activity by hour of day"></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCENE 4 — STUBBED ============ -->
+<section class="scene" id="scene-disappear">
+  <div class="wrap">
+    <p class="scene-label">Scene 4 / Feel disappearance</p>
+    <h2>Some rhythms end.</h2>
+    <p>
+      Of the 20 birds in this sample, 12 deployments end in recorded death. The
+      final version will mark those endings directly in the pulse wall and let the
+      reader feel the archive as a record of loss, not only of travel.
+    </p>
+    <div class="stub-note">
+      <b>Prototype note —</b> scene scaffolded with descriptive text. The
+      death-ending encoding (proposal Figure 5, "Vanishing trails") is planned for
+      after the feedback meeting. The "Recorded dead" filter above is a first step
+      toward this scene.
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCENE 5 — STUBBED ============ -->
+<section class="scene" id="scene-flock">
+  <div class="wrap">
+    <p class="scene-label">Scene 5 / Return to the flock</p>
+    <h2>Patterns the whole flock shares.</h2>
+    <p>
+      The closing scene will zoom back out: across all birds, seasonal activity
+      behaves almost like weather, with shared surges and quiet periods. This
+      scaffold marks where that synthesis view will go.
+    </p>
+    <div class="stub-note">
+      <b>Prototype note —</b> scene scaffolded with descriptive text; the
+      flock-level summary visualization is planned next.
+    </div>
+  </div>
+</section>
+
+<!-- ============ WRITEUP (on-page, required by rubric) ============ -->
+<section class="scene" id="writeup">
+  <div class="wrap">
+    <p class="scene-label">Project writeup</p>
+    <h2>Where the prototype stands.</h2>
+    <div class="writeup-grid">
+      <article class="writeup-card">
+        <span class="q-num">Question 1</span>
+        <h3>What have we done so far?</h3>
+        <p>
+          We have built a working prototype of our explorable explanation,
+          <em>The Sky Has a Pulse</em>, deployed on GitHub Pages. We took the public
+          Movebank <em>LifeTrack White Stork SW Germany</em> dataset and processed its
+          tri-axial accelerometer files into a per-bird, per-month motion "pulse"
+          index, exported as a single JSON asset that the page loads at runtime.
+        </p>
+        <p>
+          The page is laid out as a five-scene scrollytelling article matching our
+          proposal storyboard. The central scene &mdash; the pulse wall &mdash; is a
+          fully working D3.js visualization: a heatmap of 20 birds by 70 months built
+          with D3 data joins and scales, a month scrubber that moves a beam across the
+          study period, click-to-select on any bird row, and hover tooltips. Selecting
+          a bird drives a second linked D3 scene with that individual's monthly
+          timeline and 24-hour rhythm clock. The remaining scenes (the animated hook,
+          the disappearance scene, and the flock summary) are scaffolded with their
+          descriptive text and clearly marked as in progress.
+        </p>
+      </article>
+
+      <article class="writeup-card">
+        <span class="q-num">Question 2</span>
+        <h3>What will be the most challenging part to design, and why?</h3>
+        <p>
+          The hardest problem is making a derived, abstract quantity feel honest and
+          legible. Our "pulse" is not a directly observed value &mdash; it is an
+          activity index computed from accelerometer bursts, and the current data is a
+          systematic every-500th-row sample. A reader cannot intuitively check it the
+          way they could check a dot on a map, so we have to design the encoding and
+          annotations so the metric is understood rather than guessed at, without
+          implying a precision the sample does not have.
+        </p>
+        <p>
+          The second challenge is the emotional "disappearance" scene. Encoding
+          recorded death is central to our story, but it must inform without becoming
+          morbid or decorative, and the color and motion cues must stay distinguishable
+          from the activity encoding so the two systems are never confused. Tuning the
+          scrubber, the hover targets, and the scroll transitions so the whole piece
+          feels calm rather than busy &mdash; on both a laptop and a phone &mdash; is
+          the main work left before the final deliverable.
+        </p>
+      </article>
+    </div>
+
+    <p class="colophon">
+      Prototype for DSC 106, Spring 2026 &mdash; Final Project initial prototype.
+      Team: Roxanne Wang, Ryan Zhang, Keith Gong.
+      Data: Movebank Data Repository, <em>LifeTrack White Stork SW Germany</em> (2013&ndash;2019),
+      DOI <a href="https://doi.org/10.5441/001/1.ck04mn78">10.5441/001/1.ck04mn78</a>.
+      Built with D3.js. Pulse values are a derived activity index from a systematic
+      acceleration sample.
+    </p>
+  </div>
+</section>
+
+<footer></footer>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+"use strict";
+
+const tooltip = d3.select("#tooltip");
+const state = { selected: 0, month: 0, mode: "all" };
+
+const monthColor = d3.scaleLinear()
+  .domain([0.8, 1.15, 1.5, 1.9, 2.379])
+  .range(["#101827", "#18405c", "#47d7ff", "#ffd166", "#ff5c6c"])
+  .interpolate(d3.interpolateRgb.gamma(2.0))
+  .clamp(true);
+
+function showTip(html, x, y) {
+  tooltip.html(html).style("left", x + "px").style("top", y + "px").style("opacity", 1);
+}
+function hideTip() { tooltip.style("opacity", 0); }
+
+d3.json("data/stork_pulse_interactive.json").then(data => {
+  const months = data.months;
+  const birds = data.birds;
+
+  d3.select("#month-scrubber").attr("max", months.length - 1);
+  setMonth(0);
+
+  d3.select("#month-scrubber").on("input", function () {
+    setMonth(+this.value);
+  });
+
+  const modeButtons = [
+    ["mode-all", "all"],
+    ["mode-dead", "recorded dead"],
+    ["mode-alive", "no recorded death"]
+  ];
+  modeButtons.forEach(([id, mode]) => {
+    d3.select("#" + id).on("click", () => {
+      state.mode = mode;
+      modeButtons.forEach(([bid]) =>
+        d3.select("#" + bid).attr("aria-pressed", bid === id ? "true" : "false"));
+      drawWall();
+    });
+  });
+
+  function visibleBirds() {
+    return birds
+      .map((b, i) => ({ bird: b, index: i }))
+      .filter(d => state.mode === "all" || d.bird.status === state.mode);
+  }
+
+  function setMonth(m) {
+    state.month = m;
+    d3.select("#month-value").text(months[m]);
+    d3.select("#month-scrubber").property("value", m);
+    drawWall();
+    drawTimeline();
+  }
+
+  function selectBird(index) {
+    state.selected = index;
+    drawWall();
+    drawDetail();
+    document.getElementById("scene-bird").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // ---------- Pulse wall (D3 heatmap) ----------
+  function drawWall() {
+    const rows = visibleBirds();
+    const W = 1080, padL = 132, padR = 24, padT = 18, padB = 34;
+    const rh = 26;
+    const H = padT + padB + rows.length * rh;
+    const cw = (W - padL - padR) / months.length;
+
+    const svg = d3.select("#pulse-wall").attr("viewBox", [0, 0, W, H]);
+    svg.selectAll("*").remove();
+
+    svg.append("rect")
+      .attr("class", "wall-bg")
+      .attr("width", W).attr("height", H).attr("rx", 10);
+
+    const rowG = svg.selectAll("g.row")
+      .data(rows, d => d.bird.name)
+      .join("g")
+      .attr("class", "row")
+      .attr("transform", d => `translate(0,${padT + rows.indexOf(d) * rh})`);
+
+    // bird labels (click to select)
+    rowG.append("text")
+      .attr("class", d => "bird-label" + (d.index === state.selected ? " selected" : ""))
+      .attr("x", 16)
+      .attr("y", rh * 0.64)
+      .text(d => d.bird.name)
+      .on("click", (e, d) => selectBird(d.index));
+
+    // month tiles (D3 data join, one per month)
+    rowG.each(function (d) {
+      d3.select(this).selectAll("rect.cell")
+        .data(d.bird.monthly.map((v, i) => ({ v, i, bird: d.bird })))
+        .join("rect")
+        .attr("class", "cell")
+        .attr("x", t => padL + t.i * cw)
+        .attr("y", 3)
+        .attr("width", Math.max(1, cw - 1.3))
+        .attr("height", rh - 5)
+        .attr("rx", 2)
+        .attr("fill", t => t.v == null ? "#0d1322" : monthColor(t.v))
+        .attr("opacity", t => t.v == null ? 0.5 : 0.95)
+        .on("mousemove", (e, t) => showTip(
+          `<strong>${t.bird.name}</strong><br>${months[t.i]}<br>` +
+          `pulse: ${t.v == null ? "no sample" : t.v}`, e.clientX, e.clientY))
+        .on("mouseleave", hideTip)
+        .on("click", (e, t) => selectBird(birds.indexOf(t.bird)));
+    });
+
+    // year axis ticks
+    const axis = svg.append("g").attr("class", "axis");
+    months.forEach((m, i) => {
+      if (m.endsWith("-01")) {
+        axis.append("text")
+          .attr("class", "axis-text")
+          .attr("x", padL + i * cw)
+          .attr("y", H - 12)
+          .text(m.slice(0, 4));
+      }
+    });
+
+    // scrubber beam
+    const sx = padL + state.month * cw + cw / 2;
+    svg.append("line")
+      .attr("class", "scrub-line")
+      .attr("x1", sx).attr("x2", sx)
+      .attr("y1", padT - 6).attr("y2", H - padB + 4);
+    svg.append("text")
+      .attr("class", "scrub-cap")
+      .attr("x", sx + 6).attr("y", padT + 4)
+      .text(months[state.month]);
+  }
+
+  // ---------- Selected-bird timeline (D3) ----------
+  function drawTimeline() {
+    const b = birds[state.selected];
+    const W = 560, H = 200, m = { t: 14, r: 16, b: 28, l: 40 };
+    const svg = d3.select("#bird-timeline").attr("viewBox", [0, 0, W, H]);
+    svg.selectAll("*").remove();
+
+    const x = d3.scaleLinear().domain([0, months.length - 1]).range([m.l, W - m.r]);
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(b.monthly, v => v == null ? 0 : v) || 1]).nice()
+      .range([H - m.b, m.t]);
+
+    const defined = d => d.v != null;
+    const series = b.monthly.map((v, i) => ({ v, i }));
+
+    svg.append("path")
+      .datum(series)
+      .attr("class", "pulse-area")
+      .attr("d", d3.area().defined(defined)
+        .x(d => x(d.i)).y0(y(0)).y1(d => y(d.v)).curve(d3.curveMonotoneX));
+
+    svg.append("path")
+      .datum(series)
+      .attr("class", "pulse-line")
+      .attr("d", d3.line().defined(defined)
+        .x(d => x(d.i)).y(d => y(d.v)).curve(d3.curveMonotoneX));
+
+    svg.selectAll("circle")
+      .data(series.filter(defined))
+      .join("circle")
+      .attr("class", d => "pulse-dot" + (d.i === state.month ? " active" : ""))
+      .attr("cx", d => x(d.i))
+      .attr("cy", d => y(d.v))
+      .attr("r", d => d.i === state.month ? 5 : 2.6)
+      .on("mousemove", (e, d) => showTip(
+        `${months[d.i]}<br>pulse: ${d.v}`, e.clientX, e.clientY))
+      .on("mouseleave", hideTip);
+
+    months.forEach((mm, i) => {
+      if (mm.endsWith("-01")) {
+        svg.append("text").attr("class", "axis-text")
+          .attr("x", x(i)).attr("y", H - 10).attr("text-anchor", "middle")
+          .text(mm.slice(0, 4));
+      }
+    });
+    svg.append("g").attr("class", "axis")
+      .attr("transform", `translate(${m.l},0)`)
+      .call(d3.axisLeft(y).ticks(4))
+      .call(g => g.selectAll("text").attr("class", "axis-text"))
+      .call(g => g.selectAll("line,path").attr("stroke", "#26344a"));
+  }
+
+  // ---------- Selected-bird 24-hour clock (D3 radial) ----------
+  function drawClock() {
+    const b = birds[state.selected];
+    const W = 320, H = 320, cx = W / 2, cy = H / 2, r0 = 42, r1 = 130;
+    const svg = d3.select("#bird-clock").attr("viewBox", [0, 0, W, H]);
+    svg.selectAll("*").remove();
+
+    const maxH = d3.max(b.hourly) || 1;
+    const r = d3.scaleLinear().domain([0, maxH]).range([r0, r1]);
+    const ang = d3.scaleLinear().domain([0, 24]).range([0, 2 * Math.PI]);
+
+    const arc = d3.arc()
+      .innerRadius(r0)
+      .outerRadius(d => r(d.v))
+      .startAngle(d => ang(d.h))
+      .endAngle(d => ang(d.h + 0.86))
+      .padAngle(0.02);
+
+    svg.append("g")
+      .attr("transform", `translate(${cx},${cy})`)
+      .selectAll("path")
+      .data(b.hourly.map((v, h) => ({ v, h })))
+      .join("path")
+      .attr("d", arc)
+      .attr("fill", d => monthColor(0.8 + d.v))
+      .attr("opacity", 0.9)
+      .on("mousemove", (e, d) => showTip(
+        `${String(d.h).padStart(2, "0")}:00<br>activity: ${d.v}`, e.clientX, e.clientY))
+      .on("mouseleave", hideTip);
+
+    [0, 6, 12, 18].forEach(h => {
+      const a = ang(h) - Math.PI / 2;
+      svg.append("text").attr("class", "axis-text")
+        .attr("x", cx + Math.cos(a) * (r1 + 14))
+        .attr("y", cy + Math.sin(a) * (r1 + 14))
+        .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+        .text(h + "h");
+    });
+  }
+
+  function drawDetail() {
+    const b = birds[state.selected];
+    d3.select("#bird-name").text(b.name);
+    d3.select("#bird-stats").html(
+      `<span><b>${b.records.toLocaleString()}</b> sampled bursts</span>` +
+      `<span><b>${b.first}</b> to <b>${b.last}</b></span>` +
+      `<span>sex: <b>${b.sex || "—"}</b></span>` +
+      `<span>outcome: <b>${b.status}</b></span>`);
+    drawTimeline();
+    drawClock();
+  }
+
+  drawWall();
+  drawDetail();
+}).catch(err => {
+  d3.select("#pulse-wall").append("text")
+    .attr("x", 20).attr("y", 40).attr("fill", "#ff5c6c")
+    .text("Could not load data: " + err.message);
+  console.error(err);
+});
+</script>
+</body>
+</html>
