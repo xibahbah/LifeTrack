@@ -7,7 +7,7 @@ migration not as a route on a map but as *bodily motion over time*.
 
 **Team:** Roxanne Wang, Ryan Zhang, Keith Gong
 
-## Live prototype
+## Live project
 
 Published with GitHub Pages from the top level of this repository:
 
@@ -28,22 +28,27 @@ python3 -m http.server 8000
 
 Then open `http://localhost:8000/`.
 
-## What this prototype includes
+## What the project includes
 
-This is the **initial prototype** milestone. Per the assignment, the project is
-not yet complete: the structure is laid out, the main visualization and its
-interactions are working, and the remaining scenes are scaffolded.
+The five scenes form one coordinated D3 instrument. A shared month beam moved
+in any scene updates all of the others.
 
-- **Scene 1 — Hook** *(scaffolded)*: a static title; the animated "living sky"
-  of glowing pulses is planned next.
-- **Scene 2 — The pulse wall** *(fully built, D3.js)*: a heatmap of 20 birds by
-  70 months built with D3 data joins and scales. Interactions: a **month
-  scrubber**, **click-to-select** any bird row, **hover tooltips**, and an
-  outcome filter (all / recorded dead / no recorded death).
-- **Scene 3 — Selected bird** *(fully built, D3.js)*: selecting a bird drives a
-  linked monthly-pulse timeline and a 24-hour radial rhythm clock.
-- **Scenes 4 & 5** *(scaffolded)*: "Feel disappearance" and "Return to the
-  flock" are present with descriptive text and marked as in progress.
+- **Scene 1 — Living sky**: a canvas field of 20 drifting lights whose pulse
+  speed and glow follow each bird's monthly sampled activity; recorded deaths
+  make a light visibly end as time advances.
+- **Scene 2 — The pulse wall**: a heatmap of 20 birds by 70 months with a
+  shared month scrubber, row selection, tooltips, outcome filters, and coral
+  severed endpoints for each recorded death.
+- **Scene 3 — Selected bird**: a linked monthly timeline and 24-hour radial
+  rhythm clock. Brushing the timeline scales the whole-record hourly shape by
+  the sampled activity of the chosen interval, explicitly avoiding invented
+  month-by-hour resolution.
+- **Scene 4 — Disappearance**: the twelve recorded-death trails gathered
+  together, each terminating at a distinct coral cut crossed by the shared
+  attention beam.
+- **Scene 5 — Flock summary**: all bird traces overlaid against the
+  available-bird monthly average, with seasonal bands and a selected-bird
+  toggle/click interaction.
 - **Project writeup**: embedded at the bottom of the page.
 
 ## Repository contents
