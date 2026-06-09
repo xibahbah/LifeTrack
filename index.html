@@ -1383,7 +1383,10 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
 });
 
 /* ============================================================
-   Scene 1 — "living sky": ambient pulse particles on canvas.
+   Scene 1 — "living sky": the hero animation IS the dataset.
+   Each bright dot is one real stork; its glow tracks that bird's actual
+   monthly pulse as a 6-year timeline loops. Doomed birds flare and go dark
+   at their true death month. Ambient dust sits behind for atmosphere.
    Respects prefers-reduced-motion.
    ============================================================ */
 (function livingSky() {
@@ -1392,57 +1395,196 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
   const ctx = canvas.getContext("2d");
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  let w, h, dots = [];
-  const COLORS = ["#47d7ff", "#ffd166", "#7cf6bf", "#ff5c6c"];
+  let w, h, dust = [], birdsViz = [], months = [], DPR = 1;
+  let dataReady = false;
 
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    w = canvas.clientWidth; h = canvas.clientHeight;
-    canvas.width = w * dpr; canvas.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const n = Math.max(28, Math.round(w * h / 26000));
-    dots = d3.range(n).map(() => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      base: 0.6 + Math.random() * 1.6,
-      phase: Math.random() * Math.PI * 2,
-      speed: 0.6 + Math.random() * 1.1,
-      vx: (Math.random() - 0.5) * 0.15,
-      vy: (Math.random() - 0.5) * 0.15,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)]
-    }));
+  // color a dot by its current pulse (matches the wall's scale family)
+  function pulseColor(v) {
+    if (v == null) return "rgba(120,140,170,0.0)";
+    if (v < 1.1) return "120,180,235";   // calm — cool
+    if (v < 1.5) return "71,215,255";     // active — cyan
+    if (v < 1.9) return "255,209,102";    // hard — gold
+    return "255,92,108";                  // flight/peak — coral
   }
+
+  function lastActive(monthly) {
+    let li = -1; monthly.forEach((v, i) => { if (v != null) li = i; }); return li;
+  }
+  function firstActive(monthly) {
+    for (let i = 0; i < monthly.length; i++) if (monthly[i] != null) return i;
+    return 0;
+  }
+
+  function layout() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    w = canvas.clientWidth; h = canvas.clientHeight;
+    canvas.width = w * DPR; canvas.height = h * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    // ambient dust (atmosphere, not data)
+    const n = Math.max(24, Math.round(w * h / 42000));
+    dust = d3.range(n).map(() => ({
+      x: Math.random() * w, y: Math.random() * h,
+      r: 0.4 + Math.random() * 1.1,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.3 + Math.random() * 0.5,
+      vx: (Math.random() - 0.5) * 0.08, vy: (Math.random() - 0.5) * 0.08
+    }));
+
+    // place one node per bird in the open sky, biased away from the
+    // centered title column (roughly x 0.20–0.62) so each light reads clearly
+    birdsViz.forEach((b, i) => {
+      const seed = (Math.sin(i * 53.13) + 1) / 2;     // stable pseudo-random
+      const seed2 = (Math.cos(i * 17.7) + 1) / 2;
+      let bx;
+      if (i % 5 < 2) {
+        // left margin
+        bx = 0.03 + seed * 0.14;
+      } else {
+        // right open field (the title leaves this clear)
+        bx = 0.66 + seed * 0.31;
+      }
+      b.x = bx * w;
+      b.y = (0.10 + seed2 * 0.80) * h;
+    });
+  }
+
+  function setData(data) {
+    months = data.months;
+    birdsViz = data.birds.map(b => ({
+      monthly: b.monthly,
+      status: b.status,
+      death: b.status === "recorded dead" ? lastActive(b.monthly) : -1,
+      start: firstActive(b.monthly),
+      x: 0, y: 0,
+      driftx: (Math.random() - 0.5) * 0.05,
+      drifty: (Math.random() - 0.5) * 0.05
+    }));
+    dataReady = true;
+    layout();
+  }
+
+  // smooth pulse value at fractional month position
+  function pulseAt(monthly, fm) {
+    const i = Math.floor(fm), f = fm - i;
+    const a = monthly[i], b = monthly[Math.min(i + 1, monthly.length - 1)];
+    if (a == null && b == null) return null;
+    if (a == null) return b;
+    if (b == null) return a;
+    return a + (b - a) * f;
+  }
+
+  // timeline loop: months per second
+  const LOOP_MS = 14000;        // full 6-year sweep
+  const HOLD = 900;             // pause before restart
 
   function frame(t) {
     ctx.clearRect(0, 0, w, h);
+
+    // ambient dust
     const tt = t / 1000;
-    dots.forEach(d => {
+    dust.forEach(d => {
       d.x += d.vx; d.y += d.vy;
       if (d.x < 0) d.x = w; if (d.x > w) d.x = 0;
       if (d.y < 0) d.y = h; if (d.y > h) d.y = 0;
-      const pulse = 0.5 + 0.5 * Math.sin(tt * d.speed + d.phase);
-      const r = d.base * (0.7 + pulse * 1.6);
-      ctx.globalAlpha = 0.18 + pulse * 0.55;
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
-      ctx.fillStyle = d.color;
-      ctx.fill();
+      const tw = 0.5 + 0.5 * Math.sin(tt * d.speed + d.phase);
+      ctx.globalAlpha = 0.06 + tw * 0.12;
+      ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(147,161,182,1)"; ctx.fill();
     });
+
+    if (dataReady && months.length) {
+      const cycle = (t % (LOOP_MS + HOLD)) / LOOP_MS;
+      const fm = Math.min(months.length - 1, cycle * (months.length - 1));
+
+      birdsViz.forEach((b, i) => {
+        b.x += b.driftx; b.y += b.drifty;
+        if (b.x < 0 || b.x > w) b.driftx *= -1;
+        if (b.y < 0 || b.y > h) b.drifty *= -1;
+
+        // is this bird "alive" at the current timeline position?
+        const beforeStart = fm < b.start - 0.5;
+        const extinguished = b.death >= 0 && fm > b.death;
+        let v = pulseAt(b.monthly, fm);
+
+        let glow, size, rgb;
+        if (beforeStart || v == null) {
+          // not yet emitting — faint placeholder
+          rgb = "120,140,170"; glow = 0.12; size = 1.8;
+        } else if (extinguished) {
+          rgb = "120,140,170"; glow = 0.07; size = 1.2;
+        } else {
+          rgb = pulseColor(v);
+          const norm = Math.max(0, Math.min(1, (v - 0.8) / 1.6));
+          // breathing on top of the data value so it feels alive
+          const breath = 0.82 + 0.18 * Math.sin(tt * 1.6 + i);
+          glow = (0.5 + norm * 0.5) * breath;
+          size = 3.6 + norm * 8;
+        }
+
+        // death flare: brief bright burst right at the death month
+        if (b.death >= 0 && Math.abs(fm - b.death) < 0.4 && !extinguished) {
+          const fl = 1 - Math.abs(fm - b.death) / 0.4;
+          glow = Math.min(1, glow + fl * 1.0);
+          size += fl * 10;
+          rgb = "255,92,108";
+        }
+
+        // soft outer halo
+        const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, size * 4);
+        grad.addColorStop(0, `rgba(${rgb},${glow})`);
+        grad.addColorStop(1, `rgba(${rgb},0)`);
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(b.x, b.y, size * 4, 0, Math.PI * 2); ctx.fill();
+
+        // bright core
+        ctx.globalAlpha = Math.min(1, glow + 0.15);
+        ctx.fillStyle = `rgba(${rgb},1)`;
+        ctx.beginPath(); ctx.arc(b.x, b.y, Math.max(0.8, size * 0.45), 0, Math.PI * 2); ctx.fill();
+      });
+
+      // faint year readout, lower-left, so it reads as time
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = "rgba(147,161,182,1)";
+      ctx.font = "600 12px Inter, sans-serif";
+      ctx.textAlign = "left";
+      const ym = months[Math.round(fm)] || "";
+      ctx.fillText(ym ? ym.slice(0, 4) : "", 24, h - 24);
+    }
+
     ctx.globalAlpha = 1;
     if (!reduce) requestAnimationFrame(frame);
   }
 
-  resize();
-  window.addEventListener("resize", resize);
-  if (reduce) {
-    // draw a single static field
-    dots.forEach(d => {
-      ctx.globalAlpha = 0.4;
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, d.base * 1.4, 0, Math.PI * 2);
-      ctx.fillStyle = d.color; ctx.fill();
+  // load data (separate from the main viz fetch; cheap, cached)
+  d3.json("data/stork_pulse_interactive.json")
+    .then(setData)
+    .catch(() => {
+      // if data fails, fall back to gentle ambient-only field
+      birdsViz = []; dataReady = false; layout();
     });
-    ctx.globalAlpha = 1;
+
+  layout();
+  window.addEventListener("resize", layout);
+
+  if (reduce) {
+    // static, accessible: draw a calm field once data arrives
+    const drawStatic = () => {
+      ctx.clearRect(0, 0, w, h);
+      dust.forEach(d => {
+        ctx.globalAlpha = 0.12;
+        ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(147,161,182,1)"; ctx.fill();
+      });
+      birdsViz.forEach((b, i) => {
+        const v = pulseAt(b.monthly, b.start + 6) || 1.2;
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = `rgba(${pulseColor(v)},1)`;
+        ctx.beginPath(); ctx.arc(b.x, b.y, 3.4, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    };
+    d3.json("data/stork_pulse_interactive.json").then(d => { setData(d); drawStatic(); }).catch(drawStatic);
   } else {
     requestAnimationFrame(frame);
   }
