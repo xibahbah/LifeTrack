@@ -469,6 +469,67 @@
   }
   .tooltip strong { color: var(--gold); }
 
+  /* ---------- Animation layer ---------- */
+  /* scroll-reveal: elements rise + fade as they enter view */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 720ms cubic-bezier(.22,.61,.36,1),
+                transform 720ms cubic-bezier(.22,.61,.36,1);
+    will-change: opacity, transform;
+  }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* staggered children inside a revealed block */
+  .reveal.stagger > * { opacity: 0; transform: translateY(18px); }
+  .reveal.in.stagger > * {
+    opacity: 1; transform: none;
+    transition: opacity 620ms ease, transform 620ms cubic-bezier(.22,.61,.36,1);
+  }
+  .reveal.in.stagger > *:nth-child(1) { transition-delay: 60ms; }
+  .reveal.in.stagger > *:nth-child(2) { transition-delay: 140ms; }
+  .reveal.in.stagger > *:nth-child(3) { transition-delay: 220ms; }
+  .reveal.in.stagger > *:nth-child(4) { transition-delay: 300ms; }
+  .reveal.in.stagger > *:nth-child(5) { transition-delay: 380ms; }
+
+  /* hero entrance on load */
+  @keyframes heroRise {
+    from { opacity: 0; transform: translateY(34px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .hero-anim { opacity: 0; animation: heroRise 1s cubic-bezier(.22,.61,.36,1) forwards; }
+  .hero-anim.d1 { animation-delay: .15s; }
+  .hero-anim.d2 { animation-delay: .35s; }
+  .hero-anim.d3 { animation-delay: .60s; }
+  .hero-anim.d4 { animation-delay: .90s; }
+  .hero-anim.d5 { animation-delay: 1.2s; }
+
+  /* gentle breathing glow on the title */
+  @keyframes titleGlow {
+    0%, 100% { text-shadow: 0 0 60px rgba(71,215,255,0.12); }
+    50%      { text-shadow: 0 0 90px rgba(71,215,255,0.26); }
+  }
+  h1 { animation: titleGlow 6s ease-in-out infinite; }
+
+  /* scroll cue bob */
+  @keyframes bob { 0%,100% { transform: translateY(0); opacity:.7; } 50% { transform: translateY(6px); opacity:1; } }
+  .scroll-cue { animation: bob 2.4s ease-in-out infinite; }
+
+  /* takeaway punch shimmer on the accent */
+  @keyframes accentPulse { 0%,100% { opacity:.85; } 50% { opacity:1; } }
+  .takeaway .punch .accent { animation: accentPulse 3s ease-in-out infinite; }
+
+  /* section label slides its underline in */
+  .scene-label { position: relative; }
+
+  /* control + card hover lift */
+  .ctl { transition: background 140ms ease, border-color 140ms ease, transform 140ms ease; }
+  .ctl:hover { transform: translateY(-2px); }
+  .season-card { transition: transform 220ms cubic-bezier(.22,.61,.36,1), border-color 220ms ease; }
+  .season-card:hover { transform: translateY(-4px); border-color: rgba(246,249,255,0.35); }
+  .detail-card, .writeup-card, .viz-card { transition: transform 260ms cubic-bezier(.22,.61,.36,1); }
+  .detail-card:hover, .writeup-card:hover { transform: translateY(-3px); }
+
   @media (max-width: 760px) {
     .detail-grid, .writeup-grid { grid-template-columns: 1fr; }
     .season-grid { grid-template-columns: repeat(2, 1fr); }
@@ -476,6 +537,9 @@
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
+    .reveal, .reveal.stagger > * { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .hero-anim { opacity: 1 !important; animation: none !important; }
+    h1, .scroll-cue, .takeaway .punch .accent { animation: none !important; }
   }
 </style>
 </head>
@@ -485,25 +549,25 @@
 <header class="hook">
   <canvas id="sky-canvas" aria-hidden="true"></canvas>
   <div class="wrap">
-    <p class="eyebrow">DSC 106 · Spring 2026 · Final Project</p>
-    <h1>The Sky<br>Has a Pulse</h1>
-    <p class="lede">
+    <p class="eyebrow hero-anim d1">DSC 106 · Spring 2026 · Final Project</p>
+    <h1 class="hero-anim d2">The Sky<br>Has a Pulse</h1>
+    <p class="lede hero-anim d3">
       Twenty white storks were tagged with accelerometers and tracked for six
       years across Europe and Africa. Most data stories show their journey as a
       line on a map. This one reads it differently &mdash; as the rhythm of a
       living body.
     </p>
-    <p class="hook-question">
+    <p class="hook-question hero-anim d4">
       If a bird&rsquo;s body is a drumbeat, <span class="accent">can you hear when
       it stops?</span>
     </p>
-    <p class="scroll-cue">Scroll to listen ↓</p>
+    <p class="scroll-cue hero-anim d5">Scroll to listen ↓</p>
   </div>
 </header>
 
 <!-- ============ SCENE 2 — THE PULSE WALL ============ -->
 <section class="scene" id="scene-wall">
-  <div class="wrap">
+  <div class="wrap reveal">
     <p class="scene-label">The flock / Scrub the seasons</p>
     <h2>Every bird is a row. Every month is a tile.</h2>
     <p>
@@ -555,7 +619,7 @@
 
 <!-- ============ SCENE 3 — SELECTED BIRD ============ -->
 <section class="scene" id="scene-bird">
-  <div class="wrap">
+  <div class="wrap reveal">
     <p class="scene-label">One life / Enter a single bird</p>
     <h2>One stork is not a row. It is a rhythm.</h2>
     <p>
@@ -581,7 +645,7 @@
 
 <!-- ============ SCENE 4 — DISAPPEARANCE ============ -->
 <section class="scene" id="scene-disappear">
-  <div class="wrap">
+  <div class="wrap reveal">
     <p class="scene-label">The cost / Feel disappearance</p>
     <h2>Some rhythms end.</h2>
     <p>
@@ -605,7 +669,7 @@
 
 <!-- ============ SCENE 5 — FLOCK SYNTHESIS ============ -->
 <section class="scene" id="scene-flock">
-  <div class="wrap">
+  <div class="wrap reveal">
     <p class="scene-label">The whole / Return to the flock</p>
     <h2>Zoom back out, and the flock behaves like weather.</h2>
     <p>
@@ -626,7 +690,7 @@
 
 <!-- ============ TAKEAWAY ============ -->
 <section class="scene takeaway" id="takeaway">
-  <div class="wrap">
+  <div class="wrap reveal">
     <p class="scene-label" style="color:var(--gold);">The one thing</p>
     <h2>Migration isn&rsquo;t a map. It&rsquo;s a heartbeat.</h2>
     <p class="punch">
@@ -646,7 +710,7 @@
 
 <!-- ============ VIDEO ============ -->
 <section class="scene" id="video">
-  <div class="wrap">
+  <div class="wrap reveal">
     <p class="scene-label">Watch / Two-minute tour</p>
     <h2>The project in two minutes.</h2>
     <div class="video-frame" id="video-frame">
@@ -662,7 +726,7 @@
 
 <!-- ============ WRITEUP ============ -->
 <section class="scene" id="writeup">
-  <div class="wrap">
+  <div class="wrap reveal">
     <p class="scene-label">Project writeup</p>
     <h2>About this project.</h2>
     <div class="writeup-grid">
@@ -777,6 +841,12 @@ function firstActiveIndex(bird) {
 d3.json("data/stork_pulse_interactive.json").then(data => {
   const months = data.months;
   const birds = data.birds;
+  const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let animateWall = false;       // turned on once when the wall scrolls into view
+  let wallHasAnimated = false;
+  let lifelinesAnimated = false;
+  let seasonsAnimated = false;
+  let animateTimeline = false;
 
   d3.select("#month-scrubber").attr("max", months.length - 1);
 
@@ -814,6 +884,7 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
 
   function selectBird(index) {
     state.selected = index;
+    animateTimeline = true;
     drawWall();
     drawDetail();
     document.getElementById("scene-bird").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -847,8 +918,8 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
       .text(d => d.bird.name)
       .on("click", (e, d) => selectBird(d.index));
 
-    rowG.each(function (d) {
-      d3.select(this).selectAll("rect.cell")
+    rowG.each(function (d, rowIdx) {
+      const cells = d3.select(this).selectAll("rect.cell")
         .data(d.bird.monthly.map((v, i) => ({ v, i, bird: d.bird })))
         .join("rect")
         .attr("class", "cell")
@@ -858,25 +929,40 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
         .attr("height", rh - 5)
         .attr("rx", 2)
         .attr("fill", t => t.v == null ? "#0d1322" : monthColor(t.v))
-        .attr("opacity", t => t.v == null ? 0.5 : 0.95)
         .on("mousemove", (e, t) => showTip(
           `<strong>${t.bird.name}</strong><br>${months[t.i]}<br>` +
           `pulse: ${t.v == null ? "no sample" : t.v}`, e.clientX, e.clientY))
         .on("mouseleave", hideTip)
         .on("click", (e, t) => selectBird(birds.indexOf(t.bird)));
 
+      if (animateWall && !REDUCE) {
+        // diagonal sweep: delay by row + column so the wall "builds"
+        cells.attr("opacity", 0)
+          .transition()
+          .duration(420)
+          .delay(t => rowIdx * 28 + t.i * 6)
+          .attr("opacity", t => t.v == null ? 0.5 : 0.95);
+      } else {
+        cells.attr("opacity", t => t.v == null ? 0.5 : 0.95);
+      }
+
       // death marker at the last active month for recorded-dead birds
       if (d.bird.status === "recorded dead") {
         const li = lastActiveIndex(d.bird);
         if (li >= 0) {
-          d3.select(this).append("circle")
+          const dm = d3.select(this).append("circle")
             .attr("class", "death-mark")
             .attr("cx", padL + li * cw + cw / 2)
             .attr("cy", rh / 2)
-            .attr("r", 3.6)
             .attr("fill", "var(--coral)")
             .attr("stroke", "#05070d")
             .attr("stroke-width", 1);
+          if (animateWall && !REDUCE) {
+            dm.attr("r", 0).transition().delay(900 + rowIdx * 28).duration(360)
+              .attr("r", 3.6);
+          } else {
+            dm.attr("r", 3.6);
+          }
         }
       }
     });
@@ -924,11 +1010,22 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
       .attr("d", d3.area().defined(defined)
         .x(d => x(d.i)).y0(y(0)).y1(d => y(d.v)).curve(d3.curveMonotoneX));
 
-    svg.append("path")
+    const linePath = svg.append("path")
       .datum(series)
       .attr("class", "pulse-line")
       .attr("d", d3.line().defined(defined)
         .x(d => x(d.i)).y(d => y(d.v)).curve(d3.curveMonotoneX));
+
+    if (animateTimeline && !REDUCE) {
+      const L = linePath.node().getTotalLength();
+      linePath
+        .attr("stroke-dasharray", `${L} ${L}`)
+        .attr("stroke-dashoffset", L)
+        .transition().duration(1100).ease(d3.easeCubicInOut)
+        .attr("stroke-dashoffset", 0)
+        .on("end", function () { d3.select(this).attr("stroke-dasharray", null); });
+      animateTimeline = false; // consume; scrubbing won't re-trigger
+    }
 
     svg.selectAll("circle")
       .data(series.filter(defined))
@@ -1008,7 +1105,7 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
   }
 
   // ---------- Scene 4: lifelines ----------
-  function drawLifelines() {
+  function drawLifelines(animate) {
     // order: dead first (sorted by ending), then survivors
     const ordered = birds
       .map((b, i) => ({ b, i, end: lastActiveIndex(b), start: firstActiveIndex(b) }))
@@ -1058,20 +1155,31 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
       .attr("x1", x(0)).attr("x2", x(months.length - 1))
       .attr("y1", rh / 2).attr("y2", rh / 2);
 
-    // lit span
-    g.append("line")
+    // lit span (grows left-to-right on first reveal)
+    const live = g.append("line")
       .attr("class", "lifeline-live")
-      .attr("x1", d => x(d.start)).attr("x2", d => x(d.end))
-      .attr("y1", rh / 2).attr("y2", rh / 2)
+      .attr("x1", d => x(d.start)).attr("y1", rh / 2).attr("y2", rh / 2)
       .attr("stroke", d => d.b.status === "recorded dead" ? "var(--coral)" : "var(--gold)")
       .attr("opacity", 0.9);
 
     // ending dot
-    g.append("circle")
+    const dot = g.append("circle")
       .attr("class", "end-dot")
       .attr("cx", d => x(d.end)).attr("cy", rh / 2)
-      .attr("r", d => d.b.status === "recorded dead" ? 5 : 3.4)
       .attr("fill", d => d.b.status === "recorded dead" ? "var(--coral)" : "var(--gold)");
+
+    if (animate && !REDUCE) {
+      live.attr("x2", d => x(d.start))
+        .transition().duration(900).delay((d, idx) => 120 + idx * 70)
+        .ease(d3.easeCubicOut)
+        .attr("x2", d => x(d.end));
+      dot.attr("r", 0)
+        .transition().delay((d, idx) => 120 + idx * 70 + 900).duration(300)
+        .attr("r", d => d.b.status === "recorded dead" ? 5 : 3.4);
+    } else {
+      live.attr("x2", d => x(d.end));
+      dot.attr("r", d => d.b.status === "recorded dead" ? 5 : 3.4);
+    }
 
     // interaction layer
     g.append("rect")
@@ -1090,7 +1198,7 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
   }
 
   // ---------- Scene 5: seasonal synthesis ----------
-  function drawSeasons() {
+  function drawSeasons(animate) {
     const order = ["Spring", "Summer", "Fall", "Winter"];
     const months_per = { Spring: "Mar–May", Summer: "Jun–Aug", Fall: "Sep–Nov", Winter: "Dec–Feb" };
     const means = order.map(s => {
@@ -1101,25 +1209,69 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
     const grid = d3.select("#season-grid");
     grid.selectAll("*").remove();
 
-    means.forEach(d => {
+    means.forEach((d, idx) => {
       const card = grid.append("div").attr("class", "season-card");
       card.append("div").attr("class", "s-name").text(d.season);
-      card.append("div").attr("class", "s-val")
-        .style("color", monthColor(d.mean))
-        .text(d.mean.toFixed(2));
-      card.append("div").attr("class", "s-bar")
-        .style("width", (100 * d.mean / maxMean) + "%")
+      const val = card.append("div").attr("class", "s-val")
+        .style("color", monthColor(d.mean));
+      const bar = card.append("div").attr("class", "s-bar")
         .style("margin", "10px auto 0")
         .style("background", monthColor(d.mean));
       card.append("div").attr("class", "s-sub").text(months_per[d.season] + " · flock mean");
+
+      if (animate && !REDUCE) {
+        val.text("0.00");
+        val.transition().delay(idx * 120).duration(900).ease(d3.easeCubicOut)
+          .tween("text", function () {
+            const i = d3.interpolateNumber(0, d.mean);
+            return function (t) { this.textContent = i(t).toFixed(2); };
+          });
+        bar.style("width", "0%")
+          .transition().delay(idx * 120).duration(900).ease(d3.easeCubicOut)
+          .style("width", (100 * d.mean / maxMean) + "%");
+      } else {
+        val.text(d.mean.toFixed(2));
+        bar.style("width", (100 * d.mean / maxMean) + "%");
+      }
     });
   }
 
-  // initial render
+  // initial render (static; scenes animate when scrolled into view)
   setMonth(0);
   drawDetail();
-  drawLifelines();
-  drawSeasons();
+  drawLifelines(false);
+  drawSeasons(false);
+
+  // ----- scroll-reveal for prose blocks -----
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach(en => {
+      if (en.isIntersecting) { en.target.classList.add("in"); revealObs.unobserve(en.target); }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(el => {
+    el.classList.add("stagger");
+    revealObs.observe(el);
+  });
+
+  // ----- trigger D3 scene animations on first view -----
+  const sceneObs = new IntersectionObserver((entries) => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const id = en.target.id;
+      if (id === "scene-wall" && !wallHasAnimated) {
+        wallHasAnimated = true; animateWall = true; drawWall(); animateWall = false;
+      } else if (id === "scene-disappear" && !lifelinesAnimated) {
+        lifelinesAnimated = true; drawLifelines(true);
+      } else if (id === "scene-flock" && !seasonsAnimated) {
+        seasonsAnimated = true; drawSeasons(true);
+      }
+      sceneObs.unobserve(en.target);
+    });
+  }, { threshold: 0.25 });
+  ["scene-wall", "scene-disappear", "scene-flock"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) sceneObs.observe(el);
+  });
 
 }).catch(err => {
   d3.select("#pulse-wall").append("text")
