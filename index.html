@@ -19,6 +19,8 @@
     --gold: #ffd166;
     --coral: #ff5c6c;
     --green: #7cf6bf;
+    --glass: rgba(17, 24, 39, 0.55);
+    --glass-line: rgba(255, 255, 255, 0.09);
   }
 
   * { box-sizing: border-box; }
@@ -34,6 +36,28 @@
     color: var(--ink);
     font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1, "liga" 1, "cv11" 1;
+  }
+
+  ::selection { background: rgba(255, 209, 102, 0.28); color: var(--ink); }
+
+  /* refined scrollbar */
+  ::-webkit-scrollbar { width: 11px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(var(--cyan), var(--coral));
+    border-radius: 999px;
+    border: 3px solid var(--bg);
+  }
+
+  /* scroll-progress pulse line, fixed top */
+  #progress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--cyan), var(--gold), var(--coral));
+    box-shadow: 0 0 14px rgba(71, 215, 255, 0.55);
+    z-index: 80; transition: width 90ms linear;
   }
 
   button, input, select { font: inherit; }
@@ -62,6 +86,22 @@
     height: 100%;
     z-index: 0;
   }
+
+  /* cursor-following aurora glow in the hero */
+  #hero-glow {
+    position: absolute;
+    width: 640px; height: 640px;
+    left: 0; top: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(71, 215, 255, 0.16), rgba(255, 92, 108, 0.05) 45%, transparent 70%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 600ms ease;
+    filter: blur(8px);
+  }
+  .hook:hover #hero-glow { opacity: 1; }
 
   .hook .wrap { position: relative; z-index: 1; }
 
@@ -216,10 +256,19 @@
     flex-wrap: wrap;
   }
   .legend-bar {
-    width: 180px;
+    width: 220px;
     height: 10px;
     border-radius: 6px;
     background: linear-gradient(90deg, #101827, #18405c, #47d7ff, #ffd166, #ff5c6c);
+  }
+  .legend-scale { display: inline-flex; flex-direction: column; gap: 4px; }
+  .legend-ticks {
+    display: flex;
+    justify-content: space-between;
+    width: 220px;
+    font-size: 10.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
   }
   .legend .swatch {
     display: inline-block;
@@ -230,12 +279,24 @@
   }
 
   .viz-card {
+    position: relative;
     margin-top: 14px;
-    background: linear-gradient(180deg, rgba(17, 24, 39, 0.92), rgba(5, 7, 13, 0.92));
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.78), rgba(5, 7, 13, 0.86));
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    border: 1px solid var(--glass-line);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow:
+      0 30px 90px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .viz-card::before {
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: 18px;
+    background: radial-gradient(120% 80% at 50% -10%, rgba(71, 215, 255, 0.10), transparent 60%);
+    pointer-events: none;
   }
 
   svg { display: block; width: 100%; height: auto; }
@@ -274,10 +335,13 @@
   }
 
   .detail-card {
-    background: linear-gradient(180deg, rgba(17, 24, 39, 0.92), rgba(5, 7, 13, 0.92));
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 16px;
-    padding: 16px 18px;
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.78), rgba(5, 7, 13, 0.86));
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    border: 1px solid var(--glass-line);
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
   .detail-card h3 {
@@ -456,16 +520,19 @@
     z-index: 50;
     pointer-events: none;
     max-width: 240px;
-    padding: 9px 11px;
-    background: rgba(5, 7, 13, 0.96);
-    border: 1px solid var(--line);
-    border-radius: 10px;
+    padding: 10px 12px;
+    background: rgba(5, 7, 13, 0.82);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    border: 1px solid var(--glass-line);
+    border-radius: 12px;
     color: var(--ink);
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 1.45;
     opacity: 0;
     transform: translate(-50%, -118%);
     transition: opacity 110ms ease;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   }
   .tooltip strong { color: var(--gold); }
 
@@ -544,10 +611,12 @@
 </style>
 </head>
 <body>
+<div id="progress" aria-hidden="true"></div>
 
 <!-- ============ SCENE 1 — HOOK ============ -->
 <header class="hook">
   <canvas id="sky-canvas" aria-hidden="true"></canvas>
+  <div id="hero-glow" aria-hidden="true"></div>
   <div class="wrap">
     <p class="eyebrow hero-anim d1">DSC 106 · Spring 2026 · Final Project</p>
     <h1 class="hero-anim d2">The Sky<br>Has a Pulse</h1>
@@ -573,8 +642,10 @@
     <p>
       Each row is one tagged stork, each column a month from 2013 to 2019, and
       each tile&rsquo;s color is that bird&rsquo;s median motion <b>pulse</b> &mdash; an
-      activity index derived from the tri-axial accelerometer. Brighter tiles are
-      months of stronger body motion; dark gaps are months with no signal at all.
+      activity index derived from the tri-axial accelerometer. As a rule of thumb, a
+      pulse near <b>1.0</b> is a calm, settled month; <b>1.5</b> is active foraging;
+      and <b>2.0 and above</b> is the sustained, full-body effort of long-distance
+      migratory flight. Dark gaps are months with no signal at all.
     </p>
     <p>
       Drag the <b>month scrubber</b> to move a beam of attention through the study
@@ -596,9 +667,12 @@
     </div>
 
     <div class="legend">
-      <span>Lower pulse</span>
-      <span class="legend-bar" aria-hidden="true"></span>
-      <span>Higher pulse</span>
+      <span class="legend-scale" aria-hidden="true">
+        <span class="legend-bar"></span>
+        <span class="legend-ticks">
+          <span>1.0 calm</span><span>1.5 active</span><span>2.0+ flight</span>
+        </span>
+      </span>
       <span style="margin-left:14px;"><span class="swatch" style="background:#0d1322;border:1px solid #26344a;"></span>no sample</span>
       <span><span class="swatch" style="background:var(--coral);border-radius:50%;"></span>recorded death</span>
     </div>
@@ -847,6 +921,7 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
   let lifelinesAnimated = false;
   let seasonsAnimated = false;
   let animateTimeline = false;
+  let wallGeom = null;
 
   d3.select("#month-scrubber").attr("max", months.length - 1);
 
@@ -878,7 +953,7 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
     state.month = m;
     d3.select("#month-value").text(months[m]);
     d3.select("#month-scrubber").property("value", m);
-    drawWall();
+    updateMonthEmphasis();
     drawTimeline();
   }
 
@@ -941,9 +1016,9 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
           .transition()
           .duration(420)
           .delay(t => rowIdx * 28 + t.i * 6)
-          .attr("opacity", t => t.v == null ? 0.5 : 0.95);
+          .attr("opacity", t => cellOpacity(t));
       } else {
-        cells.attr("opacity", t => t.v == null ? 0.5 : 0.95);
+        cells.attr("opacity", t => cellOpacity(t));
       }
 
       // death marker at the last active month for recorded-dead birds
@@ -987,6 +1062,32 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
       .attr("class", "scrub-cap")
       .attr("x", sx + 6).attr("y", padT + 4)
       .text(months[state.month]);
+
+    // remember geometry so the cheap month-emphasis update can run without a rebuild
+    wallGeom = { padL, padT, padB, cw, H };
+  }
+
+  // base opacity of a tile, dimming months far from the scrubbed beam
+  function cellOpacity(t) {
+    if (t.v == null) return 0.42;
+    const dist = Math.abs(t.i - state.month);
+    // bright at/near the beam, gently dimmer farther away (never below 0.5)
+    const emph = dist === 0 ? 1 : Math.max(0.5, 0.95 - dist * 0.018);
+    return emph;
+  }
+
+  // cheap update on scrub: reweight opacity + move the beam, no full redraw
+  function updateMonthEmphasis() {
+    const svg = d3.select("#pulse-wall");
+    svg.selectAll("rect.cell").attr("opacity", function () {
+      const t = d3.select(this).datum();
+      return cellOpacity(t);
+    });
+    if (wallGeom) {
+      const sx = wallGeom.padL + state.month * wallGeom.cw + wallGeom.cw / 2;
+      svg.select(".scrub-line").attr("x1", sx).attr("x2", sx);
+      svg.select(".scrub-cap").attr("x", sx + 6).text(months[state.month]);
+    }
   }
 
   // ---------- Selected-bird timeline ----------
@@ -1237,6 +1338,7 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
   }
 
   // initial render (static; scenes animate when scrolled into view)
+  drawWall();          // establishes cells + wallGeom
   setMonth(0);
   drawDetail();
   drawLifelines(false);
@@ -1344,6 +1446,34 @@ d3.json("data/stork_pulse_interactive.json").then(data => {
   } else {
     requestAnimationFrame(frame);
   }
+})();
+
+/* scroll-progress pulse line */
+(function progressBar() {
+  const bar = document.getElementById("progress");
+  if (!bar) return;
+  function update() {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    const pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+    bar.style.width = pct + "%";
+  }
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+  update();
+})();
+
+/* hero cursor-following glow */
+(function heroGlow() {
+  const hook = document.querySelector(".hook");
+  const glow = document.getElementById("hero-glow");
+  if (!hook || !glow) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  hook.addEventListener("mousemove", (e) => {
+    const r = hook.getBoundingClientRect();
+    glow.style.left = (e.clientX - r.left) + "px";
+    glow.style.top = (e.clientY - r.top) + "px";
+  });
 })();
 </script>
 </body>
